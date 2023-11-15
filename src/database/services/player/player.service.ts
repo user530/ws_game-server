@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreatePlayerDTO, RequestPlayerDTO, UpdatePlayerDTO } from 'src/database/dtos/players';
-import { Player } from 'src/database/entities/player.entity';
+import { Player } from 'src/database/entities/';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -56,7 +56,7 @@ export class PlayerService {
         return this.playersRepository.save(newPlayer);
     }
 
-    async updatePlayer(id: number, updatePlayerDTO: UpdatePlayerDTO): Promise<Player> {
+    async updatePlayer(id: string, updatePlayerDTO: UpdatePlayerDTO): Promise<Player> {
         const { name } = updatePlayerDTO;
 
         const existingPlayer: Player | null = await this.getPlayerById({ id });
@@ -74,7 +74,7 @@ export class PlayerService {
         return this.playersRepository.save(existingPlayer);
     }
 
-    async deletePlayer(id: number): Promise<Player> {
+    async deletePlayer(id: string): Promise<Player> {
         const existingPlayer: Player | null = await this.getPlayerById({ id });
 
         if (!existingPlayer)
