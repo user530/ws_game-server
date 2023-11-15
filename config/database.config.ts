@@ -1,5 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { Player } from 'src/database/entities';
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
 
@@ -14,7 +15,7 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
         password: process.env.DB_PASS || 'password',
         synchronize: process.env.DB_SYNC === 'true',
         entities: [
-            __dirname + '/../**/*.entity{.ts,.js}'
+            Player,
         ]
     }
 })

@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { dbConfig } from 'config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DatabaseModule } from './database/database.module';
+import { PlayerService } from './database/services';
 
 @Module({
   imports: [
@@ -19,10 +21,15 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => configService.get<TypeOrmModuleOptions>('database'),
       }
-    )
-
+    ),
+    DatabaseModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [
+    AppController
+  ],
+  providers: [
+    AppService,
+    PlayerService
+  ],
 })
 export class AppModule { }
