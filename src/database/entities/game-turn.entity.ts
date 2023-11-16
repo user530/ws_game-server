@@ -31,6 +31,6 @@ export class GameTurn {
     )
     column: GameTableCol;
 
-    @CreateDateColumn()
-    timestamp: Date;
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
 }

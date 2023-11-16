@@ -17,15 +17,15 @@ export class AppController {
     // const createPlayer = await this.playerService.createPlayer({ name: 'Top' });
     // console.log(createPlayer);
     // const gameTurn = await this.gameTurnService.getGameTurns({ game_id: 'e4e33ab6-db6f-48ef-bb21-1f828623ebf0' });
-    const gameTurn = await this.gameTurnService.addGameTurn({ game_id: 'asd', player_id: 'qwe', column: GameTableCol.Col_1, row: GameTableRow.Row_1 });
+    // const gameTurn = await this.gameTurnService.addGameTurn({ game_id: 'asd', player_id: 'qwe', column: GameTableCol.Col_1, row: GameTableRow.Row_1 });
 
-    // const players = await this.playerService.getAllPlayers();
+    const players = await this.playerService.getAllPlayers();
     // const player = await this.playerService.getPlayerByName({ name: 'Top' });
     // const player = await this.playerService.getPlayerById({ id: 'e4e33ab6-db6f-48ef-bb21-1f828623ebf0' });
     // const player = await this.playerService.updatePlayer({ id: 'e4e33ab6-db6f-48ef-bb21-1f828623ebf0', name: 'Kek' })
     // const player = await this.playerService.deletePlayer({ id: 'e4e33ab6-db6f-48ef-bb21-1f828623ebf0' });
 
-
-    return gameTurn
+    return players
+    // return gameTurn
   }
 }

@@ -1,32 +1,38 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { Game, GameTurn, Player } from 'src/database/entities';
+import { CreateGameTable, CreateGameTurnTable, CreatePlayerTable } from 'src/migrations';
+import { DataSourceOptions } from 'typeorm';
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
 
-    if (!isDBType(process.env.DB_TYPE))
-        throw new Error('Unsupported DB type provided!');
+    if (!isPostgressDB(process.env.DB_TYPE))
+        throw new Error('Check DB config options!');
 
-    return {
+    const options: DataSourceOptions = {
         type: process.env.DB_TYPE || 'postgres',
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT) || 5432,
         username: process.env.DB_USER || 'root',
         password: process.env.DB_PASS || 'password',
+        database: process.env.DB_NAME || 'ws_game',
         synchronize: process.env.DB_SYNC === 'true',
         entities: [
             Player,
             Game,
             GameTurn,
         ],
-    }
+        migrations: [
+            CreatePlayerTable,
+            CreateGameTable,
+            CreateGameTurnTable,
+        ],
+        migrationsRun: true,
+    };
+
+    return options;
 })
 
-
-type ExtractType<T, K extends keyof T> = K extends keyof T ? T[K] : never;
-
-function isDBType(value: string): value is ExtractType<TypeOrmModuleOptions, 'type'> {
-    const dbTypes = ["mysql", "mariadb", "postgres", "cockroachdb", "mssql", "sap", "oracle", "mongodb", "aurora-mysql"];
-
-    return dbTypes.includes(value);
+function isPostgressDB(value: string): value is 'postgres' {
+    return value === 'postgres'
 }

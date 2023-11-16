@@ -27,7 +27,7 @@ export class Game {
     @JoinColumn({ name: 'host_id' })
     host: Player;
 
-    @ManyToOne(() => Player, { eager: true })
+    @ManyToOne(() => Player, { eager: true, nullable: true })
     @JoinColumn({ name: 'guest_id' })
     guest: Player;
 
@@ -37,6 +37,9 @@ export class Game {
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
+
+    @CreateDateColumn({ name: 'updated_at', onUpdate: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date;
 
     @BeforeInsert()
     @BeforeUpdate()
