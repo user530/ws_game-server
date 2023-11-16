@@ -1,6 +1,8 @@
-import { Column, CreateDateColumn, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Player, Game } from '../entities'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Player, Game } from '../entities';
+import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
 
+@Entity()
 export class GameTurn {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -13,11 +15,21 @@ export class GameTurn {
     @JoinColumn({ name: 'player_id' })
     player: Player;
 
-    @Column()
-    row: number;
+    @Column(
+        {
+            type: 'enum',
+            enum: GameTableRow,
+        }
+    )
+    row: GameTableRow;
 
-    @Column()
-    column: number;
+    @Column(
+        {
+            type: 'enum',
+            enum: GameTableCol
+        }
+    )
+    column: GameTableCol;
 
     @CreateDateColumn()
     timestamp: Date;

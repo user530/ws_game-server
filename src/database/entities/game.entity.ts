@@ -2,13 +2,8 @@ import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, JoinColum
 import { Player } from './player.entity';
 import { GameTurn } from './game-turn.entity';
 import { ConflictException } from '@nestjs/common'
+import { GameStatus } from 'src/shared/enums/game';
 
-enum GameStatus {
-    Pending = 'pending',
-    InProgress = 'inProgress',
-    Completed = 'completed',
-    Aborted = 'aborted',
-}
 
 @Entity()
 export class Game {
@@ -24,7 +19,8 @@ export class Game {
     )
     status: GameStatus;
 
-    @Column({ default: null })
+    @ManyToOne(() => Player, { nullable: true })
+    @JoinColumn({ name: 'winner_id' })
     winner: Player | null;
 
     @ManyToOne(() => Player, { eager: true })

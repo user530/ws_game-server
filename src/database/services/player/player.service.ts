@@ -1,52 +1,53 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreatePlayerDTO, RequestPlayerDTO, UpdatePlayerDTO } from 'src/database/dtos/players';
+import { CreatePlayerDTO, RequestPlayerByIdDTO, RequestPlayerByNameDTO, UpdatePlayerDTO, DeletePlayerDTO } from 'src/database/dtos/players';
 import { Player } from 'src/database/entities/';
 import { Repository } from 'typeorm';
 
+interface IPlayerControls {
+    getAllPlayers(): Promise<Player[]>,
+    getPlayerById(requestPlayerByIdDTO: RequestPlayerByIdDTO): Promise<Player | null>,
+    getPlayerByName(requestPlayerByNameDTO: RequestPlayerByNameDTO): Promise<Player | null>,
+    createPlayer(createPlayerDTO: CreatePlayerDTO): Promise<Player>,
+    updatePlayer(updatePlayerDTO: UpdatePlayerDTO): Promise<Player>,
+    deletePlayer(deletePlayerDTO: DeletePlayerDTO): Promise<Player>,
+}
+
 @Injectable()
-export class PlayerService {
+export class PlayerService implements IPlayerControls {
     constructor(
         @InjectRepository(Player)
         private readonly playersRepository: Repository<Player>
     ) { }
 
     async getAllPlayers(): Promise<Player[]> {
-        const players: Player[] = await this.playersRepository.find({ order: { id: 'ASC' } });
-        return players;
+        return await this.playersRepository.find({ order: { id: 'ASC' } });
     }
 
-    async getPlayerById(requestPlayerDTO: RequestPlayerDTO): Promise<Player | null> {
-        const { id } = requestPlayerDTO;
-
-        const existingUser: Player = await this.playersRepository.findOne(
+    async getPlayerById(requestPlayerByIdDTO: RequestPlayerByIdDTO): Promise<Player | null> {
+        return this.playersRepository.findOne(
             {
                 where:
                 {
-                    id
+                    id: requestPlayerByIdDTO.id
                 }
             }
-        )
-
-        return existingUser;
+        );
     }
 
-    async getPlayerByName(name: string): Promise<Player | null> {
-        const existingUser: Player = await this.playersRepository.findOne(
+    async getPlayerByName(requestPlayerByNameDTO: RequestPlayerByNameDTO): Promise<Player | null> {
+        return this.playersRepository.findOne(
             {
                 where:
                 {
-                    name
+                    name: requestPlayerByNameDTO.name
                 }
             }
-        )
-
-        return existingUser;
+        );
     }
 
     async createPlayer(createPlayerDTO: CreatePlayerDTO): Promise<Player> {
-        const { name } = createPlayerDTO;
-        const existingPlayer: Player | null = await this.getPlayerByName(name);
+        const existingPlayer: Player | null = await this.getPlayerByName({ ...createPlayerDTO });
 
         if (existingPlayer)
             throw new ConflictException('Player name is already taken!');
@@ -56,15 +57,14 @@ export class PlayerService {
         return this.playersRepository.save(newPlayer);
     }
 
-    async updatePlayer(id: string, updatePlayerDTO: UpdatePlayerDTO): Promise<Player> {
-        const { name } = updatePlayerDTO;
-
+    async updatePlayer(updatePlayerDTO: UpdatePlayerDTO): Promise<Player> {
+        const { id, name } = updatePlayerDTO;
         const existingPlayer: Player | null = await this.getPlayerById({ id });
 
         if (!existingPlayer)
             throw new NotFoundException('Player does not exist!');
 
-        const nameTaken: Player | null = await this.getPlayerByName(name);
+        const nameTaken: Player | null = await this.getPlayerByName({ name });
 
         if (nameTaken)
             throw new ConflictException('Player name is already taken!');
@@ -74,8 +74,8 @@ export class PlayerService {
         return this.playersRepository.save(existingPlayer);
     }
 
-    async deletePlayer(id: string): Promise<Player> {
-        const existingPlayer: Player | null = await this.getPlayerById({ id });
+    async deletePlayer(deletePlayerDTO: DeletePlayerDTO): Promise<Player> {
+        const existingPlayer: Player | null = await this.getPlayerById({ ...deletePlayerDTO });
 
         if (!existingPlayer)
             throw new NotFoundException('Player does not exist!');

@@ -1,9 +1,12 @@
 import { CreatePlayerDTO } from './create-player.dto';
-import { RequestPlayerDTO } from './request-player.dto';
+import { RequestPlayerByIdDTO, RequestPlayerByNameDTO } from './request-player.dto';
 import { UpdatePlayerDTO } from './update-player.dto';
+import { DeletePlayerDTO } from './delete-player.dto'
 
 export {
     CreatePlayerDTO,
-    RequestPlayerDTO,
+    RequestPlayerByIdDTO,
+    RequestPlayerByNameDTO,
     UpdatePlayerDTO,
+    DeletePlayerDTO,
 }

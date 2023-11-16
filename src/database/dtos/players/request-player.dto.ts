@@ -1,8 +1,15 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
-export class RequestPlayerDTO {
+export class RequestPlayerByIdDTO {
     @IsNotEmpty()
-    @IsString()
     @IsUUID()
     id: string;
+}
+
+export class RequestPlayerByNameDTO {
+    @IsNotEmpty()
+    @IsString()
+    @MinLength(3)
+    @MaxLength(12)
+    name: string;
 }

@@ -1,6 +1,10 @@
-import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class UpdatePlayerDTO {
+    @IsNotEmpty()
+    @IsUUID()
+    id: string;
+
     @IsNotEmpty()
     @IsString()
     @MinLength(3)

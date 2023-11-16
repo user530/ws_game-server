@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayerService } from './services/player/player.service';
+import { GameTurnService } from './services/game-turn/game-turn.service';
 import { Game, GameTurn, Player } from './entities';
 
 @Module({
@@ -14,7 +15,8 @@ import { Game, GameTurn, Player } from './entities';
     )
   ],
   providers: [
-    PlayerService
+    PlayerService,
+    GameTurnService,
   ],
   exports: [
     TypeOrmModule,
