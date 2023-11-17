@@ -1,3 +1,4 @@
+import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
 import { MigrationInterface, QueryRunner, Table } from "typeorm"
 
 export class CreateGameTurnsTable1700143531783 implements MigrationInterface {
@@ -12,6 +13,7 @@ export class CreateGameTurnsTable1700143531783 implements MigrationInterface {
                         type: 'uuid',
                         isPrimary: true,
                         isGenerated: true,
+                        generationStrategy: 'uuid',
                     },
                     {
                         name: 'game_id',
@@ -21,18 +23,18 @@ export class CreateGameTurnsTable1700143531783 implements MigrationInterface {
                     {
                         name: 'player_id',
                         type: 'uuid',
-                        isNullable: false,
+                        isNullable: true,
                     },
                     {
                         name: 'row',
                         type: 'enum',
-                        enum: ['Row_1', 'Row_2', 'Row_3',],
+                        enum: [GameTableRow.Row_1, GameTableRow.Row_2, GameTableRow.Row_3,],
                         isNullable: false,
                     },
                     {
                         name: 'column',
                         type: 'enum',
-                        enum: ['Col_1', 'Col_2', 'Col_3',],
+                        enum: [GameTableCol.Col_1, GameTableCol.Col_2, GameTableCol.Col_3,],
                         isNullable: false,
                     },
                     {
@@ -46,11 +48,13 @@ export class CreateGameTurnsTable1700143531783 implements MigrationInterface {
                         columnNames: ['game_id'],
                         referencedTableName: 'game',
                         referencedColumnNames: ['id'],
+                        onDelete: 'CASCADE',
                     },
                     {
                         columnNames: ['player_id'],
                         referencedTableName: 'player',
                         referencedColumnNames: ['id'],
+                        onDelete: 'SET NULL'
                     },
                 ]
             }

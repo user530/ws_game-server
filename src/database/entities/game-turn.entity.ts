@@ -7,11 +7,11 @@ export class GameTurn {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Game, (game) => game.turns, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Game, (game) => game.turns, { nullable: false, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'game_id' })
     game: Game;
 
-    @ManyToOne(() => Player, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Player, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'player_id' })
     player: Player;
 

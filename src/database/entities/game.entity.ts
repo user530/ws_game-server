@@ -19,15 +19,15 @@ export class Game {
     )
     status: GameStatus;
 
-    @ManyToOne(() => Player, { nullable: true })
+    @ManyToOne(() => Player, { eager: true, nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'winner_id' })
     winner: Player | null;
 
-    @ManyToOne(() => Player, { eager: true })
+    @ManyToOne(() => Player, { eager: true, nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'host_id' })
     host: Player;
 
-    @ManyToOne(() => Player, { eager: true, nullable: true })
+    @ManyToOne(() => Player, { eager: true, nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'guest_id' })
     guest: Player;
 

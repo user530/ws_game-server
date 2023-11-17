@@ -34,6 +34,7 @@ export class CreateGameTable1700143513180 implements MigrationInterface {
                     {
                         name: 'host_id',
                         type: 'uuid',
+                        isNullable: true,
                     },
                     {
                         name: 'guest_id',
