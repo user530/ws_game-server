@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayerService } from './services/player/player.service';
 import { GameTurnService } from './services/game-turn/game-turn.service';
 import { Game, GameTurn, Player } from './entities';
+import { GameService } from './services/game/game.service';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Game, GameTurn, Player } from './entities';
   providers: [
     PlayerService,
     GameTurnService,
+    GameService,
   ],
   exports: [
     TypeOrmModule,

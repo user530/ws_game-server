@@ -6,6 +6,7 @@ import { dbConfig } from 'config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
 import { GameTurnService, PlayerService } from './database/services';
+import { GameService } from './src/database/services/game/game.service';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { GameTurnService, PlayerService } from './database/services';
     AppService,
     PlayerService,
     GameTurnService,
+    GameService,
   ],
 })
 export class AppModule { }
