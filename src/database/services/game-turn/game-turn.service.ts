@@ -32,8 +32,6 @@ export class GameTurnService implements IGameTurnControls {
 
         const newTurn: GameTurn = await this.gameturnRepository.create(createGameTurnDTO);
 
-        console.log(newTurn);
-
         return await this.gameturnRepository.save(newTurn);
     }
 }

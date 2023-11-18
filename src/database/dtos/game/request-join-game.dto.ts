@@ -3,7 +3,7 @@ import { IsNotEmpty, IsUUID } from 'class-validator'
 export class RequestJoinGameDTO {
     @IsNotEmpty()
     @IsUUID()
-    client_id: string;
+    guest_id: string;
 
     @IsNotEmpty()
     @IsUUID()
