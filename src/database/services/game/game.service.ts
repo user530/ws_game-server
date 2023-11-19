@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGameDTO, RequestGameDTO, RequestJoinGameDTO, RequestPlayerGamesDTO, UpdateGameStatusDTO } from 'src/database/dtos/game';
 import { Game, Player } from 'src/database/entities';
 import { GameStatus } from 'src/shared/enums/game';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 interface IGameControls {
     getGameById(requestGameDTO: RequestGameDTO): Promise<Game>;
@@ -12,7 +12,7 @@ interface IGameControls {
     hostGame(createGameDTO: CreateGameDTO): Promise<Game>;
     joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game>;
     updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game>;
-    clearEmptyGame(requestGameDTO: RequestGameDTO): Promise<void>;
+    clearEmptyGames(): Promise<void>;
 }
 
 @Injectable()
@@ -67,10 +67,15 @@ export class GameService implements IGameControls {
         if (!host)
             throw new NotFoundException('Host not found!');
 
-        const alreadyHosting: Game = await this.gameRepository.findOneBy({ host, status: GameStatus.Pending });
+        const alreadyHosting: Game = await this.gameRepository.findOneBy(
+            {
+                host: { id: host.id },
+                status: In([GameStatus.Pending, GameStatus.InProgress]),
+            }
+        );
 
         if (alreadyHosting)
-            throw new ConflictException('User already hosting a game!');
+            throw new ConflictException('User already in game!');
 
         const newGame: Game = await this.gameRepository.create({ host });
 
@@ -92,7 +97,11 @@ export class GameService implements IGameControls {
         if (guest.id === host.id)
             throw new ConflictException('Host and guest must be unique entities!');
 
-        const gameToJoin: Game = await this.gameRepository.findOneBy({ host, status: GameStatus.Pending });
+        const gameToJoin: Game = await this.gameRepository.findOneBy(
+            {
+                host: { id: host.id },
+                status: GameStatus.Pending,
+            });
 
         if (!gameToJoin)
             throw new NotFoundException('No pendings game from the user!');
@@ -115,14 +124,13 @@ export class GameService implements IGameControls {
         return this.gameRepository.save(gameToUpdate);
     }
 
-    async clearEmptyGame(requestGameDTO: RequestGameDTO): Promise<void> {
-        const gameToCheck: Game = await this.gameRepository.findOneBy({ id: requestGameDTO.game_id });
+    async clearEmptyGames(): Promise<void> {
+        const games: Game[] = await this.gameRepository.find({});
 
-        if (!gameToCheck)
-            throw new NotFoundException('Game not found!');
-
-        if (!gameToCheck.host && !gameToCheck.guest)
-            await this.gameRepository.remove(gameToCheck);
+        games.forEach(async (game: Game) => {
+            if (!game.host && !game.guest)
+                await this.gameRepository.remove(game);
+        });
 
         return;
     }
