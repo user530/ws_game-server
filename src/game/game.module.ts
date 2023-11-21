@@ -5,4 +5,5 @@ import { GameInstanceModule } from './game_instance/game_instance.module';
   providers: [],
   imports: [GameInstanceModule]
 })
-export class GameModule { }
+export class GameModule {
+}
