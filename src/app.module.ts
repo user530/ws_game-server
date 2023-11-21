@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { dbConfig } from 'config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
+import { GameModule } from './game/game.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DatabaseModule } from './database/database.module';
       }
     ),
     DatabaseModule,
+    GameModule,
   ],
   controllers: [
     AppController
