@@ -1,16 +1,11 @@
-import { BaseWSMessageType, MessageType } from '../../types';
-
-type LobbyCommandType =
-    | 'start_game'
-    | 'abort_game'
-    | 'kick_guest';
+import { BaseWSMessageType, LobbyCommandType, MessageType } from '../../types';
 
 interface BaseLobbyCommandMessage extends BaseWSMessageType {
     type: Extract<MessageType, 'lobby_command'>,
     command: LobbyCommandType,
 }
 
-interface LobbyCommandDataType {
+export interface LobbyCommandDataType {
     game_id: string,
 }
 
