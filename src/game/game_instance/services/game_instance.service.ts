@@ -3,8 +3,8 @@ import { Socket } from 'socket.io';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { GameService, GameTurnService } from 'src/database/services';
-import { GameStatus } from 'src/shared/enums/game';
-import { ErrorMessage } from 'src/shared/interfaces/ws-messages';
+import { GameStatus } from '@user530/ws_game_shared/enums';
+import { ErrorMessage } from '@user530/ws_game_shared/interfaces';
 import { createErrorMessage } from '@user530/ws_game_shared/creators';
 
 interface IGameInstanceService {

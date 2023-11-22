@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Player, Game } from '../entities';
-import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
+import { GameTableCol, GameTableRow } from '@user530/ws_game_shared/enums';
 
 @Entity()
 export class GameTurn {

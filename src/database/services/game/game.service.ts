@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException, } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGameDTO, RequestGameDTO, RequestJoinGameDTO, RequestPlayerGamesDTO, UpdateGameStatusDTO } from 'src/database/dtos/game';
 import { Game, Player } from 'src/database/entities';
-import { GameStatus } from 'src/shared/enums/game';
+import { GameStatus } from '@user530/ws_game_shared/enums';
 import { In, Repository } from 'typeorm';
 
 interface IGameControls {
