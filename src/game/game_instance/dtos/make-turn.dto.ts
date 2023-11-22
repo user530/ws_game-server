@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { GameCommandMakeTurn, GameCommandDataType as IGameCommandData } from '../../../shared/interfaces/ws-messages'
-import { Equals, IsEnum, IsNotEmpty, IsNotEmptyObject, IsNumber, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { Equals, IsEnum, IsNotEmpty, IsNumber, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
 
 class GameCommandDataType implements IGameCommandData {
@@ -21,7 +21,7 @@ class GameCommandDataType implements IGameCommandData {
     column: GameTableCol;
 }
 
-export class MadeTurnDTO implements GameCommandMakeTurn {
+export class MakeTurnDTO implements GameCommandMakeTurn {
     @IsNotEmpty()
     @IsNumber()
     @Equals(1)

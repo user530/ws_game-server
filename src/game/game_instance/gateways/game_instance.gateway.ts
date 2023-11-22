@@ -1,7 +1,7 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance.service';
-import { MadeTurnDTO } from '../dtos/made-turn.dto';
+import { MakeTurnDTO } from '../dtos/make-turn.dto';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
 @WebSocketGateway(
@@ -26,11 +26,9 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
     console.log(`User ${client.id} disconnected!`);
   }
 
-  @SubscribeMessage('made_turn')
-  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MadeTurnDTO): string {
-    console.log(`User ${client.id} made a turn!`);
-    console.log(payload)
+  @SubscribeMessage('make_turn')
+  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
 
-    return;
+    return this.gameInstanceService.handleMakeTurnMessage(client, payload);
   }
 }
