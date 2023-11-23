@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
-import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
+import { MakeTurnDTO, ForfeitMatchDTO } from '../../dtos';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { GameService, GameTurnService } from 'src/database/services';
 import { GameStatus } from '@user530/ws_game_shared/enums';
 import { ErrorMessage } from '@user530/ws_game_shared/interfaces';
 import { createErrorMessage } from '@user530/ws_game_shared/creators';
+import { GameLogicService } from '../game_logic/game_logic.service';
 
 interface IGameInstanceService {
     handleMakeTurnMessage(client: Socket, payload: MakeTurnDTO): Promise<void>;
@@ -15,8 +16,7 @@ interface IGameInstanceService {
 @Injectable()
 export class GameInstanceService implements IGameInstanceService {
     constructor(
-        private readonly gameTurnService: GameTurnService,
-        private readonly gameService: GameService,
+        private readonly gameLogicService: GameLogicService,
     ) { }
 
     emitError(socketConnection: Socket, errorMessage: ErrorMessage) {
@@ -30,23 +30,22 @@ export class GameInstanceService implements IGameInstanceService {
         console.log(`User ${client.id} made a turn`);
         console.log(payload);
 
-        const { game_id, player_id } = payload.data;
-        const game = await this.gameService.getGameById({ game_id });
+        const { data: turnData } = payload;
 
-        console.log(game);
+        try {
+            const prevTurns = await this.gameLogicService.validateGameTurn(turnData);
+            const newTurn = await this.gameLogicService.addTurnToGame(turnData);
+            const winner = await this.gameLogicService.checkWinner(turn)
+        } catch (error) {
+            this.emitError(client, createErrorMessage({ error }),);
+        }
 
-        if (!game)
-            return this.emitError(client, createErrorMessage({ code: 404, message: 'Game not found!' }));
+        // CHECK WIN CONDITION
 
-        if (game.status !== GameStatus.InProgress)
-            return this.emitError(client, createErrorMessage({ code: 406, message: 'Game is not active!' }));
 
-        if (game.guest.id !== player_id || game.host.id !== player_id)
-            return this.emitError(client, createErrorMessage({ code: 401, message: 'Unauthorized user!' }));
+        // GAME WON -> EMIT END_GAME
+        // ELSE -> EMIT GAME_STATE_UPDATED, NEXT_TURN
 
-        // CHECK THAT IT IS PLAYERS TURN
-
-        const turns = await this.gameTurnService.getGameTurns({ game_id });
         console.log(turns)
 
 

@@ -1,6 +1,6 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { GameInstanceService } from '../services/game_instance.service';
+import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO } from '../dtos/make-turn.dto';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 

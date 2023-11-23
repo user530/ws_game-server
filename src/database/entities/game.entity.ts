@@ -33,7 +33,7 @@ export class Game {
 
     @OneToMany(() => GameTurn, (turn) => turn.game)
     @JoinColumn({ name: 'game_turns' })
-    turns: GameTurn;
+    turns: GameTurn[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
