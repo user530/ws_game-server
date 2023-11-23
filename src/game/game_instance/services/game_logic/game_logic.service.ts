@@ -1,7 +1,8 @@
 import { Injectable, NotAcceptableException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { GameStatus } from '@user530/ws_game_shared/enums';
 import { GameService, GameTurnService } from 'src/database/services';
+import { GameStatus, GameFieldSquare } from '@user530/ws_game_shared/enums';
 import { GameCommandDataType } from '@user530/ws_game_shared/interfaces';
+import { getGridSquare } from '@user530/ws_game_shared/helpers';
 import { GameTurn } from 'src/database/entities';
 
 
@@ -21,16 +22,19 @@ export class GameLogicService {
         if (!game)
             throw new NotFoundException('Game not found!');
 
+        if (!game.guest)
+            throw new NotAcceptableException('Game is not active!');
+
         const { status, guest: { id: guest_id }, host: { id: host_id }, turns } = game;
 
         if (status !== GameStatus.InProgress)
             throw new NotAcceptableException('Game is not active!');
 
-        if (player_id !== host_id || player_id !== guest_id)
+        if (player_id !== host_id && player_id !== guest_id)
             throw new UnauthorizedException('Unauthorized user!');
 
         // Id of the player who made the last move / if first turn we set guest_id as the last player
-        const prevTurnPlayer = turns[turns.length - 1]?.player?.id ?? guest_id;
+        const prevTurnPlayer = turns?.at(-1)?.player?.id ?? guest_id;
 
         if (player_id === prevTurnPlayer)
             throw new UnauthorizedException('Unauthorized user!');
@@ -39,10 +43,11 @@ export class GameLogicService {
     }
 
     async addTurnToGame(turnData: GameCommandDataType): Promise<GameTurn> {
+        console.log('ADD GAME TURN FIRED');
         return this.gameTurnService.addGameTurn(turnData);
     }
 
-    haveWon(turnData: GameCommandDataType, gameTurns: GameTurn[]): boolean {
+    playerWon(turnData: GameCommandDataType, gameTurns: GameTurn[]): boolean {
         const { player_id, column, row } = turnData;
         // Check row
         const horizontal = gameTurns.filter((turn) => turn.row === row && turn.player.id === player_id);
@@ -54,9 +59,17 @@ export class GameLogicService {
         if (vertical.length === 3)
             return true
 
-        // Check diagonal
-        const isDiagonal = column ===  || 
+        // Check diagonals
+        const diagonal1 = gameTurns.filter(
+            (turn) =>
+                [GameFieldSquare.Square_1, GameFieldSquare.Square_5, GameFieldSquare.Square_9].includes(getGridSquare(turn.row, turn.column)) && turn.player.id === player_id);
+        const diagonal2 = gameTurns.filter(
+            (turn) =>
+                [GameFieldSquare.Square_3, GameFieldSquare.Square_5, GameFieldSquare.Square_7].includes(getGridSquare(turn.row, turn.column)) && turn.player.id === player_id);
 
-        return
+        if (diagonal1.length === 3 || diagonal2.length === 3)
+            return true;
+
+        return false;
     }
 }

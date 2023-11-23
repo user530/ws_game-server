@@ -29,8 +29,9 @@ export class GameTurnService implements IGameTurnControls {
 
     async addGameTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<GameTurn> {
         console.log('GameTurnService - AddGameTurn');
-
-        const newTurn: GameTurn = await this.gameturnRepository.create(createGameTurnDTO);
+        console.log('CREATE GAME TURN DTO');
+        console.log(createGameTurnDTO);
+        const newTurn: GameTurn = await this.gameturnRepository.create({ game: createGameTurnDTO.game_id, });
 
         return await this.gameturnRepository.save(newTurn);
     }

@@ -2,8 +2,6 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../../dtos';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
-import { GameService, GameTurnService } from 'src/database/services';
-import { GameStatus } from '@user530/ws_game_shared/enums';
 import { ErrorMessage } from '@user530/ws_game_shared/interfaces';
 import { createErrorMessage } from '@user530/ws_game_shared/creators';
 import { GameLogicService } from '../game_logic/game_logic.service';
@@ -26,30 +24,30 @@ export class GameInstanceService implements IGameInstanceService {
     async handleMakeTurnMessage(
         client: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
         payload: MakeTurnDTO): Promise<void> {
+
         console.log('Handle MakeTurn fired!');
         console.log(`User ${client.id} made a turn`);
-        console.log(payload);
-
         const { data: turnData } = payload;
+        console.log(turnData);
 
         try {
             const prevTurns = await this.gameLogicService.validateGameTurn(turnData);
             const newTurn = await this.gameLogicService.addTurnToGame(turnData);
-            const winner = await this.gameLogicService.checkWinner(turn)
+            const playerWon = this.gameLogicService.playerWon(turnData, [...prevTurns, newTurn]);
+
+            if (playerWon)
+                client.emit('game_over', turnData.player_id);
+            else
+                client.emit('new_state', payload);
+
         } catch (error) {
-            this.emitError(client, createErrorMessage({ error }),);
+            if (error instanceof HttpException) {
+                const err = error as HttpException
+                this.emitError(client, createErrorMessage({ code: err.getStatus(), message: err.message }));
+            }
+            else
+                throw error;
         }
-
-        // CHECK WIN CONDITION
-
-
-        // GAME WON -> EMIT END_GAME
-        // ELSE -> EMIT GAME_STATE_UPDATED, NEXT_TURN
-
-        console.log(turns)
-
-
-        return
     }
 
     handleForfeitMessage(
