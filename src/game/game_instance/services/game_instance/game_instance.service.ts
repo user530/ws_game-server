@@ -31,14 +31,15 @@ export class GameInstanceService implements IGameInstanceService {
         console.log(turnData);
 
         try {
-            const prevTurns = await this.gameLogicService.validateGameTurn(turnData);
-            const newTurn = await this.gameLogicService.addTurnToGame(turnData);
-            const playerWon = this.gameLogicService.playerWon(turnData, [...prevTurns, newTurn]);
+            // const validGame = await this.gameLogicService.validateGameTurn(turnData);
+            await this.gameLogicService.addTurnToGame(turnData);
+
+            const playerWon = await this.gameLogicService.playerWon(turnData);
 
             if (playerWon)
                 client.emit('game_over', turnData.player_id);
             else
-                client.emit('new_state', payload);
+                client.emit('new_state', turnData);
 
         } catch (error) {
             if (error instanceof HttpException) {

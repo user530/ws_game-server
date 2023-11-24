@@ -25,7 +25,7 @@ export class GameService implements IGameControls {
     ) { }
 
     getGameById(requestGameDTO: RequestGameDTO): Promise<Game | null> {
-        return this.gameRepository.findOneBy({ id: requestGameDTO.game_id });
+        return this.gameRepository.findOne({ where: { id: requestGameDTO.game_id }, relations: ['turns'] });
     }
 
     getAllPlayerGames(requestPlayerGames: RequestPlayerGamesDTO): Promise<Game[]> {
@@ -40,7 +40,8 @@ export class GameService implements IGameControls {
                 order:
                 {
                     createdAt: 'ASC',
-                }
+                },
+                relations: ['turns']
             }
         );
     }
@@ -55,7 +56,8 @@ export class GameService implements IGameControls {
                 order:
                 {
                     createdAt: 'DESC',
-                }
+                },
+                relations: ['turns']
             },
         );
     }
