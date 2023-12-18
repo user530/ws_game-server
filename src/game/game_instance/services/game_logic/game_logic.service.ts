@@ -21,38 +21,42 @@ export class GameLogicService implements IGameInstanceService {
     ) { }
 
     async registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void> {
+        console.log('Register turn fired!');
         await this.gameTurnService.addGameTurn(createGameTurnDTO);
     }
 
     async processTurn(turnData: GameCommandDataType): Promise<GameStatus> {
-        console.log('Checking win condition');
+        console.log('Process turn - Checking win condition');
         const { game_id, player_id } = turnData;
 
         const game = await this.gameService.getGameById({ game_id });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
-
+        console.log('Process turn - game found');
         const { turns } = game;
 
         const isWin = await this.checkWinCondition(turns, turnData);
-
+        console.log('Win condition checked!');
         if (isWin) {
+            console.log('GAME IS WON!');
             await this.handleWin({ game_id, player_id });
-            return GameStatus.Completed;
+            return GameStatus.Completed;            // CHANGE GAME STATUS TO TURN RESULT ENUM
         }
-
+        console.log('Game still not won!');
         const isDraw = await this.checkDrawCondition(turns);
 
         if (isDraw) {
+            console.log('GAME IS DRAW!');
             await this.handleDraw({ game_id });
-            return GameStatus.Aborted;
+            return GameStatus.Aborted;          // CHANGE GAME STATUS TO TURN RESULT ENUM
         }
-
-        return GameStatus.InProgress;
+        console.log('Game still not draw!');
+        return GameStatus.InProgress;           // CHANGE GAME STATUS TO TURN RESULT ENUM
     }
 
     private async checkWinCondition(turns: GameTurn[], turnData: GameCommandDataType): Promise<boolean> {
+        console.log('Check win condition - fired!')
         const { player_id, row, column } = turnData;
 
         // Check the row
@@ -81,23 +85,29 @@ export class GameLogicService implements IGameInstanceService {
         if (diagonal1.length === 3 || diagonal2.length === 3)
             return true;
 
+        console.log('Game not won!');
+
         // Game going on
         return false;
     }
 
-    private async checkDrawCondition(turns: GameTurn[]): Promise<GameStatus> {
+    private async checkDrawCondition(turns: GameTurn[]): Promise<boolean> {
+        console.log('CHECK DRAW - FIRED!');
+        console.log(turns)
         if (turns && turns.length === 9)
-            return GameStatus.Completed;
+            return true;
 
-        return GameStatus.InProgress;
+        return false;
     }
 
     private async handleWin(setWinnerDTO: SetWinnerDTO): Promise<void> {
-        await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
+        console.log('Game logic service - Handle win fired!');
         await this.gameService.setWinner(setWinnerDTO);
+        await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
     }
 
     private async handleDraw(requestGameDTO: RequestGameDTO): Promise<void> {
+        console.log('Game logic service - Handle draw fired!');
         await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
     }
 }
