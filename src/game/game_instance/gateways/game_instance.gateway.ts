@@ -28,6 +28,6 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
   @SubscribeMessage('make_turn')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
-    return this.gameInstanceService.handleMakeTurnMessage(client, payload);
+    return this.gameInstanceService.handleMakeTurnMessage(this.server, client, payload);
   }
 }
