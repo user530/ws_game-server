@@ -27,7 +27,26 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   @SubscribeMessage('make_turn')
-  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
-    return this.gameInstanceService.handleMakeTurnMessage(this.server, client, payload);
+  async handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
+    console.log('GameInstanceGateway - MakeTurn message handler');
+    const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
+    console.log('Turn result events', turnResultEvents);
+
+    if (Array.isArray(turnResultEvents)) {
+      console.log('Turn result is a pair. Emit to all players');
+      turnResultEvents.forEach(
+        event => 'data' in event
+          ? this.server.emit(event.command, event.data)
+          : this.server.emit(event.command)
+      );
+    }
+    else if (turnResultEvents.type === 'game_event') {
+      console.log('Turn result is a single non-error event. Emit to all players');
+      this.server.emit(turnResultEvents.command, turnResultEvents.data);
+    }
+    else {
+      console.log('Turn result is an error event -> Emmit back to the sender');
+      client.emit(turnResultEvents.type, { code: turnResultEvents.code, message: turnResultEvents.message });
+    }
   }
 }
