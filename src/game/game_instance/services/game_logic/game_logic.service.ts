@@ -2,14 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { GameService, GameTurnService } from 'src/database/services';
 import { GameStatus, GameFieldSquare, GameTurnResult } from '@user530/ws_game_shared/enums';
 import { GameCommandDataType } from '@user530/ws_game_shared/interfaces/ws-messages';
+import { GameTurnDataType } from '@user530/ws_game_shared/interfaces/ws-events';
 import { getGridSquare } from '@user530/ws_game_shared/helpers';
 import { CreateGameTurnDTO } from 'src/database/dtos/game-turn';
-import { Game, GameTurn } from 'src/database/entities';
+import { Game, GameTurn, Player } from 'src/database/entities';
 import { RequestGameDTO, SetWinnerDTO } from 'src/database/dtos/game';
 
 interface IGameInstanceService {
     registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void>;
     processTurn(turnData: GameCommandDataType): Promise<Game>;
+    lastTurnResult({ gameStatus, gameWinner }: { gameStatus: GameStatus, gameWinner: Player }): GameTurnResult;
+    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player, lastTurn: GameTurn }): GameTurnDataType['mark'];
 }
 
 
@@ -19,6 +22,18 @@ export class GameLogicService implements IGameInstanceService {
         private readonly gameService: GameService,
         private readonly gameTurnService: GameTurnService,
     ) { }
+
+    lastTurnResult({ gameStatus, gameWinner }: { gameStatus: GameStatus; gameWinner: Player; }): GameTurnResult {
+        return gameStatus === GameStatus.Completed
+            ? gameWinner
+                ? GameTurnResult.Win
+                : GameTurnResult.Draw
+            : GameTurnResult.Not_Decided
+    }
+
+    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player; lastTurn: GameTurn; }): GameTurnDataType['mark'] {
+        return lastTurn.player.id === gameHost.id ? 'X' : 'O';
+    }
 
     async registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void> {
         console.log('Register turn fired!');
