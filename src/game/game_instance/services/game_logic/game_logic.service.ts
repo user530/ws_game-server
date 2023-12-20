@@ -4,12 +4,12 @@ import { GameStatus, GameFieldSquare, GameTurnResult } from '@user530/ws_game_sh
 import { GameCommandDataType } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { getGridSquare } from '@user530/ws_game_shared/helpers';
 import { CreateGameTurnDTO } from 'src/database/dtos/game-turn';
-import { GameTurn } from 'src/database/entities';
+import { Game, GameTurn } from 'src/database/entities';
 import { RequestGameDTO, SetWinnerDTO } from 'src/database/dtos/game';
 
 interface IGameInstanceService {
     registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void>;
-    processTurn(turnData: GameCommandDataType): Promise<GameTurnResult>;
+    processTurn(turnData: GameCommandDataType): Promise<Game>;
 }
 
 
@@ -25,7 +25,7 @@ export class GameLogicService implements IGameInstanceService {
         await this.gameTurnService.addGameTurn(createGameTurnDTO);
     }
 
-    async processTurn(turnData: GameCommandDataType): Promise<GameTurnResult> {
+    async processTurn(turnData: GameCommandDataType): Promise<Game> {
         console.log('Process turn - Checking win condition');
         const { game_id, player_id } = turnData;
 
@@ -36,28 +36,29 @@ export class GameLogicService implements IGameInstanceService {
         console.log('Process turn - game found');
         const { turns } = game;
 
-        const isWin = await this.checkWinCondition(turns, turnData);
+        const isWin = await this.checkWinCondition(turns);
         console.log('Win condition checked!');
         if (isWin) {
             console.log('GAME IS WON!');
-            await this.handleWin({ game_id, player_id });
-            return GameTurnResult.Win;
+            const newGameState = await this.handleWin({ game_id, player_id });
+            return newGameState;
         }
         console.log('Game still not won!');
         const isDraw = await this.checkDrawCondition(turns);
 
         if (isDraw) {
             console.log('GAME IS DRAW!');
-            await this.handleDraw({ game_id });
-            return GameTurnResult.Draw;
+            const newGameState = await this.handleDraw({ game_id });
+            return newGameState;
         }
         console.log('Game still not draw!');
-        return GameTurnResult.Not_Decided;
+        return game;
     }
 
-    private async checkWinCondition(turns: GameTurn[], turnData: GameCommandDataType): Promise<boolean> {
+    private async checkWinCondition(turns: GameTurn[]): Promise<boolean> {
         console.log('Check win condition - fired!')
-        const { player_id, row, column } = turnData;
+
+        const { player: { id: player_id }, row, column } = turns.slice(-1)[0];
 
         // Check the row
         const horizontal = turns.filter((turn) => turn.row === row && turn.player?.id === player_id);
@@ -100,14 +101,20 @@ export class GameLogicService implements IGameInstanceService {
         return false;
     }
 
-    private async handleWin(setWinnerDTO: SetWinnerDTO): Promise<void> {
+    private async handleWin(setWinnerDTO: SetWinnerDTO): Promise<Game> {
         console.log('Game logic service - Handle win fired!');
+
         await this.gameService.setWinner(setWinnerDTO);
-        await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
+        const newGameState = await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
+
+        return newGameState;
     }
 
-    private async handleDraw(requestGameDTO: RequestGameDTO): Promise<void> {
+    private async handleDraw(requestGameDTO: RequestGameDTO): Promise<Game> {
         console.log('Game logic service - Handle draw fired!');
-        await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
+
+        const newGameState = await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
+
+        return newGameState;
     }
 }
