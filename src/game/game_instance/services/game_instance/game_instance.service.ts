@@ -2,10 +2,8 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../../dtos';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
-import { ErrorMessage, GameCommandDataType } from '@user530/ws_game_shared/interfaces';
-import { createErrorMessage } from '@user530/ws_game_shared/creators';
 import { GameLogicService } from '../game_logic/game_logic.service';
-import { GameStatus } from '@user530/ws_game_shared/enums';
+import { GameEmitterService } from '../game_emitter/game_emitter.service';
 
 interface IGameInstanceService {
     handleMakeTurnMessage(socket: Socket, client: Socket, payload: MakeTurnDTO): Promise<void>;
@@ -16,11 +14,8 @@ interface IGameInstanceService {
 export class GameInstanceService implements IGameInstanceService {
     constructor(
         private readonly gameLogicService: GameLogicService,
+        private readonly gameEmitterService: GameEmitterService,
     ) { }
-
-    emitError(socketConnection: Socket, errorMessage: ErrorMessage) {
-        socketConnection.emit('error', errorMessage);
-    }
 
     async handleMakeTurnMessage(
         socket: Socket,
@@ -33,25 +28,41 @@ export class GameInstanceService implements IGameInstanceService {
         console.log(turnData);
 
         try {
+            // Game logic service (turnData) => new Game state
+
+            // Game to Events
+
+            // Emit events
+
             await this.gameLogicService.registerTurn(turnData);
 
             const resultStatus = await this.gameLogicService.processTurn(turnData);         // CHANGE FOR THE PROPER ENUM!
 
-            socket.emit('new_turn', turnData)
+            const mark = turnData.player_id === 'bfb9551f-ee05-4b69-b19c-e471f81f3e4d' ? 'X' : 'O'; // DELETE THIS CRAP!
 
-            if (resultStatus === GameStatus.Completed)
-                socket.emit('game_over_win', turnData.player_id);
-            else if (resultStatus === GameStatus.Aborted)
-                socket.emit('game_over_draw');
+            // CREATE MESSAGES
+
+            // EMITTER SERVICE - EMIT MESSAGES
+
+            // socket.emit('new_turn', { ...turnData, mark })
+
+
+            // if (resultStatus === GameStatus.Completed)
+            //     socket.emit('game_over_win', turnData.player_id);
+            // else if (resultStatus === GameStatus.Aborted)
+            //     socket.emit('game_over_draw');
 
         } catch (error) {
             console.log('handleMakeTurnMessage - catch block!');
-            if (error instanceof HttpException) {
-                const err = error as HttpException
-                this.emitError(client, createErrorMessage({ code: err.getStatus(), message: err.message }));
-            }
-            else
-                this.emitError(client, createErrorMessage({ code: 505, message: error.message }));
+            // Create err event 
+            // Emit event
+            // if (error instanceof HttpException) {
+            //     const err = error as HttpException
+
+            //     this.emitError(client, createErrorMessage({ code: err.getStatus(), message: err.message }));
+            // }
+            // else
+            //     this.emitError(client, createErrorMessage({ code: 505, message: error.message }));
         }
     }
 

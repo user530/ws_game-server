@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { GameService, GameTurnService } from 'src/database/services';
-import { GameFieldSquare, GameStatus } from '@user530/ws_game_shared/enums';
-import { GameCommandDataType } from '@user530/ws_game_shared/interfaces';
+import { GameStatus, GameFieldSquare, GameTurnResult } from '@user530/ws_game_shared/enums';
+import { GameCommandDataType } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { getGridSquare } from '@user530/ws_game_shared/helpers';
 import { CreateGameTurnDTO } from 'src/database/dtos/game-turn';
 import { GameTurn } from 'src/database/entities';
@@ -9,7 +9,7 @@ import { RequestGameDTO, SetWinnerDTO } from 'src/database/dtos/game';
 
 interface IGameInstanceService {
     registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void>;
-    processTurn(turnData: GameCommandDataType): Promise<GameStatus>;
+    processTurn(turnData: GameCommandDataType): Promise<GameTurnResult>;
 }
 
 
@@ -25,7 +25,7 @@ export class GameLogicService implements IGameInstanceService {
         await this.gameTurnService.addGameTurn(createGameTurnDTO);
     }
 
-    async processTurn(turnData: GameCommandDataType): Promise<GameStatus> {
+    async processTurn(turnData: GameCommandDataType): Promise<GameTurnResult> {
         console.log('Process turn - Checking win condition');
         const { game_id, player_id } = turnData;
 
@@ -41,7 +41,7 @@ export class GameLogicService implements IGameInstanceService {
         if (isWin) {
             console.log('GAME IS WON!');
             await this.handleWin({ game_id, player_id });
-            return GameStatus.Completed;            // CHANGE GAME STATUS TO TURN RESULT ENUM
+            return GameTurnResult.Win;
         }
         console.log('Game still not won!');
         const isDraw = await this.checkDrawCondition(turns);
@@ -49,10 +49,10 @@ export class GameLogicService implements IGameInstanceService {
         if (isDraw) {
             console.log('GAME IS DRAW!');
             await this.handleDraw({ game_id });
-            return GameStatus.Aborted;          // CHANGE GAME STATUS TO TURN RESULT ENUM
+            return GameTurnResult.Draw;
         }
         console.log('Game still not draw!');
-        return GameStatus.InProgress;           // CHANGE GAME STATUS TO TURN RESULT ENUM
+        return GameTurnResult.Not_Decided;
     }
 
     private async checkWinCondition(turns: GameTurn[], turnData: GameCommandDataType): Promise<boolean> {
