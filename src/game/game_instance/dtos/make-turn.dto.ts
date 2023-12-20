@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { GameCommandMakeTurn, GameCommandDataType as IGameCommandData } from '@user530/ws_game_shared/interfaces';
+import { GameCommandMakeTurn, GameCommandDataType as IGameCommandData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { GameTableCol, GameTableRow } from '@user530/ws_game_shared/enums';
 import { Equals, IsEnum, IsNotEmpty, IsNumber, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
 
