@@ -116,7 +116,7 @@ export class GameService implements IGameControls {
 
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
         const { game_id, new_status } = updateGameStatusDTO;
-        const gameToUpdate: Game = await this.gameRepository.findOneBy({ id: game_id });
+        const gameToUpdate: Game = await this.gameRepository.findOne({ where: { id: game_id }, relations: ['turns'] });
 
         if (!gameToUpdate)
             throw new NotFoundException('Game not found!');
