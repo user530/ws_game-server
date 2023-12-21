@@ -1,11 +1,10 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
-import { MakeTurnDTO } from '../dtos/make-turn.dto';
+import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameInstanceMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
-import { ForfeitMatchDTO } from '../dtos';
-
+import { GameCommand } from '@user530/ws_game_shared/types';
 
 @WebSocketGateway(
   {
@@ -29,7 +28,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
     console.log(`User ${client.id} disconnected!`);
   }
 
-  @SubscribeMessage('make_turn')
+  @SubscribeMessage(GameCommand.MakeTurn)
   async wsGameMakeTurnListener(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
     console.log('GameInstanceGateway - MakeTurn message handler');
     const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
@@ -53,7 +52,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
     }
   }
 
-  @SubscribeMessage('forfeit_match')
+  @SubscribeMessage(GameCommand.ForfeitMatch)
   wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
     console.log('FORFEIT MESSAGE RECIEVED!');
     console.log(payload);
