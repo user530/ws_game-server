@@ -3,6 +3,9 @@ import { Socket } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO } from '../dtos/make-turn.dto';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { GameInstanceMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
+import { ForfeitMatchDTO } from '../dtos';
+
 
 @WebSocketGateway(
   {
@@ -10,7 +13,7 @@ import { UsePipes, ValidationPipe } from '@nestjs/common';
   }
 )
 @UsePipes(new ValidationPipe())
-export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDisconnect, GameInstanceMessagesHandler {
   @WebSocketServer()
   private server: Socket;
 
@@ -27,7 +30,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   @SubscribeMessage('make_turn')
-  async handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
+  async wsGameMakeTurnListener(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
     console.log('GameInstanceGateway - MakeTurn message handler');
     const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
     console.log('Turn result events', turnResultEvents);
@@ -48,5 +51,12 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
       console.log('Turn result is an error event -> Emmit back to the sender');
       client.emit(turnResultEvents.type, { code: turnResultEvents.code, message: turnResultEvents.message });
     }
+  }
+
+  @SubscribeMessage('forfeit_match')
+  wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
+    console.log('FORFEIT MESSAGE RECIEVED!');
+    console.log(payload);
+    return
   }
 }
