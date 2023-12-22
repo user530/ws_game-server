@@ -1,16 +1,15 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { Socket, ServerOptions } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameInstanceMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { GameCommand } from '@user530/ws_game_shared/types';
 
-@WebSocketGateway(
-  {
-    cors: '*',
-  }
-)
+@WebSocketGateway({
+  cors: '*',
+  namespace: '/game'
+})
 @UsePipes(new ValidationPipe())
 export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDisconnect, GameInstanceMessagesHandler {
   @WebSocketServer()
@@ -21,11 +20,22 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   ) { }
 
   handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
-    console.log(`User ${client.id} connected!`);
+    console.log('User connected!');
+    // Read header - Auth token
+    // Retrieve user from the token
+    // Validate eglible user
+    // Return game turns (GameTurnDataType[])
+
+    if (!client.recovered) {
+      console.log('Initial connection...Joining room');
+      client.join('test');
+    }
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log(`User ${client.id} disconnected!`);
+    console.log('Left rooms:')
+    console.log(client.rooms);
   }
 
   @SubscribeMessage(GameCommand.MakeTurn)
