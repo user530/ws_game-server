@@ -92,7 +92,12 @@ export class GameInstanceService implements IGameInstanceService {
         }
     }
 
-    handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon> {
-        return
+    async handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon> {
+        const { data } = payload;
+
+        const newGameState = await this.gameLogicService.processForfeit(data);
+        const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
+        console.log('Game won event ', gameWonEvent);
+        return gameWonEvent;
     }
 }
