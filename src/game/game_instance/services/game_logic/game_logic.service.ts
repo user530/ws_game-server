@@ -13,6 +13,7 @@ interface IGameInstanceService {
     processTurn(turnData: GameCommandDataType): Promise<Game>;
     lastTurnResult({ gameStatus, gameWinner }: { gameStatus: GameStatus, gameWinner: Player }): GameTurnResult;
     lastTurnMark({ gameHost, lastTurn }: { gameHost: Player, lastTurn: GameTurn }): GameTurnDataType['mark'];
+    processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game>;
 }
 
 
@@ -130,6 +131,23 @@ export class GameLogicService implements IGameInstanceService {
 
         const newGameState = await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
 
+        return newGameState;
+    }
+
+    async processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game> {
+        const { game_id, player_id } = forfeitData;
+        console.log(`Process forfeit: gameId - ${game_id}, playerId - ${player_id}`);
+        const game = await this.gameService.getGameById({ game_id });
+
+        if (!game)
+            throw new NotFoundException('Game is not found!');
+        console.log('Process forfeit - game found');
+
+        const winnerId = game.host.id === player_id ? game.guest.id : game.host.id;
+        console.log('Process forfeit - winner id: ', winnerId);
+        const newGameState = await this.handleWin({ game_id, player_id: winnerId });
+        console.log('Process forfeit - new game state');
+        console.log(newGameState);
         return newGameState;
     }
 }
