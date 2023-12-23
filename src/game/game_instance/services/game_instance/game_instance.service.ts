@@ -24,17 +24,14 @@ export class GameInstanceService implements IGameInstanceService {
         | ErrorEvent
     > {
         try {
-            console.log('Handle MakeTurn fired!');
-
             const { data: turnData } = payload;
-            console.log(turnData);
 
             // Add the turn to the game
             await this.gameLogicService.registerTurn(turnData);
-            console.log('Turn registered');
+
             // Update game state depending on the turn
             const newGameState = await this.gameLogicService.processTurn(turnData);
-            console.log('Turn processed, new state:', newGameState);
+
             // Status of the player turn
             const turnResult = this.gameLogicService.lastTurnResult(
                 {
@@ -42,7 +39,7 @@ export class GameInstanceService implements IGameInstanceService {
                     gameWinner: newGameState.winner
                 }
             );
-            console.log('Turn result ', turnResult);
+
             // Decide the turn mark based on the turn
             const turnMark = this.gameLogicService.lastTurnMark(
                 {
@@ -50,7 +47,7 @@ export class GameInstanceService implements IGameInstanceService {
                     lastTurn: newGameState.turns.slice(-1)[0]
                 }
             );
-            console.log('Turn mark ', turnMark);
+
             // New turn event
             const newTurnEvent = this.eventCreatorService.prepareNewTurnEvent(
                 {
@@ -59,17 +56,16 @@ export class GameInstanceService implements IGameInstanceService {
                     mark: turnMark
                 }
             );
-            console.log('New turn event ', newTurnEvent);
-            console.log('Before the if block');
+
             // Return Event/Events, based on the turn result
             if (turnResult === GameTurnResult.Win) {
                 const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: turnData.player_id });
-                console.log('Game won event ', gameWonEvent);
+
                 return [newTurnEvent, gameWonEvent];
             }
             else if (turnResult === GameTurnResult.Draw) {
                 const gameDrawEvent = this.eventCreatorService.prepareGameDrawEvent();
-                console.log('Game draw event ', gameDrawEvent);
+
                 return [newTurnEvent, gameDrawEvent];
             }
             else {
@@ -77,8 +73,6 @@ export class GameInstanceService implements IGameInstanceService {
             }
 
         } catch (error) {
-            console.log('handleMakeTurnMessage - catch block!');
-
             // Default err object
             const errObject = { status: 500, message: 'Something went wrong' };
 
@@ -96,8 +90,9 @@ export class GameInstanceService implements IGameInstanceService {
         const { data } = payload;
 
         const newGameState = await this.gameLogicService.processForfeit(data);
+
         const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
-        console.log('Game won event ', gameWonEvent);
+
         return gameWonEvent;
     }
 }

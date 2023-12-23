@@ -40,31 +40,25 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
   @SubscribeMessage(GameCommand.MakeTurn)
   async wsGameMakeTurnListener(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
-    console.log('GameInstanceGateway - MakeTurn message handler');
     const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
-    console.log('Turn result events', turnResultEvents);
 
-    if (Array.isArray(turnResultEvents)) {
-      console.log('Turn result is a pair. Emit to all players');
-
+    // Turn that ended the game
+    if (Array.isArray(turnResultEvents))
       turnResultEvents.forEach(event => this.server.emit(event.command, event));
-    }
-    else if (turnResultEvents.type === 'game_event') {
-      console.log('Turn result is a single non-error event. Emit to all players');
 
+    // Regular turn
+    else if (turnResultEvents.type === 'game_event')
       this.server.emit(turnResultEvents.command, turnResultEvents);
-    }
-    else {
-      console.log('Turn result is an error event -> Emmit back to the sender');
 
+    // Error -> Emit to sender
+    else
       client.emit(turnResultEvents.type, turnResultEvents);
-    }
   }
 
   @SubscribeMessage(GameCommand.ForfeitMatch)
-  wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
-    console.log('FORFEIT MESSAGE RECIEVED!');
-    console.log(payload);
-    return
+  async wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
+    const forfeitEvent = await this.gameInstanceService.handleForfeitMessage(payload);
+
+    this.server.emit(forfeitEvent.command, forfeitEvent);
   }
 }
