@@ -6,9 +6,19 @@ import { GameService, GameTurnService } from 'src/database/services';
 import { GameLogicService } from './services/game_logic/game_logic.service';
 import { GameEmitterService } from './services/game_emitter/game_emitter.service';
 import { GameInstanceEventsService } from './services/game_instance_events/game_instance_events.service';
+import { GameInstanceGuard } from './guards/game_instance/game_instance.guard';
 
 @Module({
   imports: [DatabaseModule],
-  providers: [GameInstanceService, GameInstanceGateway, GameTurnService, GameService, GameLogicService, GameEmitterService, GameInstanceEventsService]
+  providers: [
+    GameInstanceService,
+    GameInstanceGateway,
+    GameTurnService,
+    GameService,
+    GameLogicService,
+    GameEmitterService,
+    GameInstanceEventsService,
+    GameInstanceGuard,
+  ]
 })
 export class GameInstanceModule { }

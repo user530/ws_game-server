@@ -2,9 +2,10 @@ import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnectio
 import { Socket } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { ExecutionContext, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameInstanceMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { GameCommand } from '@user530/ws_game_shared/types';
+import { GameInstanceGuard } from '../guards/game_instance/game_instance.guard';
 
 @WebSocketGateway({
   cors: '*',
@@ -16,10 +17,21 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   private server: Socket;
 
   constructor(
-    private readonly gameInstanceService: GameInstanceService
+    private readonly gameInstanceService: GameInstanceService,
+    private readonly gameInstanceGuard: GameInstanceGuard,
   ) { }
 
   async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+    const isValid = await this.gameInstanceGuard.canActivate(
+      {
+        switchToWs: () => ({ getClient: () => client })
+      } as ExecutionContext
+    );
+
+    // HANDLE FAILED GAME AUTHENTICATION - PLACEHOLDER
+    if (!isValid)
+      return client.disconnect();
+
     const { gameId } = client.handshake.auth;
 
     const turnEvents = await this.gameInstanceService.handleConnection(gameId);
@@ -40,8 +52,6 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log(`User ${client.id} disconnected!`);
-    console.log('Left rooms:')
-    console.log(client.rooms);
   }
 
   @SubscribeMessage(GameCommand.MakeTurn)
