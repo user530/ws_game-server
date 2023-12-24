@@ -1,5 +1,5 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
-import { Socket, ServerOptions } from 'socket.io';
+import { Socket } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
@@ -59,6 +59,12 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   async wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
     const forfeitEvent = await this.gameInstanceService.handleForfeitMessage(payload);
 
-    this.server.emit(forfeitEvent.command, forfeitEvent);
+    // Forfeit event
+    if (forfeitEvent.type === 'game_event')
+      this.server.emit(forfeitEvent.command, forfeitEvent);
+
+    // Error -> Emit to sender
+    else
+      client.emit(forfeitEvent.type, forfeitEvent);
   }
 }

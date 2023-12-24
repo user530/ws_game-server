@@ -8,7 +8,7 @@ import { GameInstanceEventsService } from '../game_instance_events/game_instance
 interface IGameInstanceService {
     handleMakeTurnMessage(payload: MakeTurnDTO):
         Promise<GameEventNewTurn | [GameEventNewTurn, GameEventGameWon | GameEventGameDraw] | ErrorEvent>;
-    handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon>;
+    handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon | ErrorEvent>;
 }
 
 @Injectable()
@@ -86,13 +86,26 @@ export class GameInstanceService implements IGameInstanceService {
         }
     }
 
-    async handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon> {
-        const { data } = payload;
+    async handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon | ErrorEvent> {
+        try {
+            const { data } = payload;
 
-        const newGameState = await this.gameLogicService.processForfeit(data);
+            const newGameState = await this.gameLogicService.processForfeit(data);
 
-        const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
+            const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
 
-        return gameWonEvent;
+            return gameWonEvent;
+        } catch (error) {
+            // Default err object
+            const errObject = { status: 500, message: 'Something went wrong' };
+
+            // Reset error data if the error is recognised
+            if (error instanceof HttpException) {
+                errObject.status = error.getStatus();
+                errObject.message = error.message;
+            }
+
+            return this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message });
+        }
     }
 }
