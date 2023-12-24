@@ -9,6 +9,7 @@ interface IGameInstanceService {
     handleMakeTurnMessage(payload: MakeTurnDTO):
         Promise<GameEventNewTurn | [GameEventNewTurn, GameEventGameWon | GameEventGameDraw] | ErrorEvent>;
     handleForfeitMessage(payload: ForfeitMatchDTO): Promise<GameEventGameWon | ErrorEvent>;
+    handleConnection(gameId: string): Promise<GameEventNewTurn[] | ErrorEvent>;
 }
 
 @Injectable()
@@ -95,6 +96,31 @@ export class GameInstanceService implements IGameInstanceService {
             const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
 
             return gameWonEvent;
+        } catch (error) {
+            // Default err object
+            const errObject = { status: 500, message: 'Something went wrong' };
+
+            // Reset error data if the error is recognised
+            if (error instanceof HttpException) {
+                errObject.status = error.getStatus();
+                errObject.message = error.message;
+            }
+
+            return this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message });
+        }
+    }
+
+    async handleConnection(gameId: string): Promise<GameEventNewTurn[] | ErrorEvent> {
+        try {
+            console.log('Game instance - Handle connection');
+            const gameTurnsData = await this.gameLogicService.getGameTurns(gameId);
+            console.log('Game turns data: ');
+            console.log(gameTurnsData);
+            const newTurnEvents = gameTurnsData.map(
+                newTurnData => this.eventCreatorService.prepareNewTurnEvent(newTurnData)
+            )
+
+            return newTurnEvents;
         } catch (error) {
             // Default err object
             const errObject = { status: 500, message: 'Something went wrong' };
