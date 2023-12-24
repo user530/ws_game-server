@@ -38,54 +38,50 @@ export class GameLogicService implements IGameInstanceService {
     }
 
     async registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void> {
-        console.log('Register turn fired!');
         await this.gameTurnService.addGameTurn(createGameTurnDTO);
     }
 
     async processTurn(turnData: GameCommandDataType): Promise<Game> {
-        console.log('Process turn - Checking win condition');
         const { game_id, player_id } = turnData;
 
         const game = await this.gameService.getGameById({ game_id });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
-        console.log('Process turn - game found');
+
         const { turns } = game;
 
         const isWin = await this.checkWinCondition(turns);
-        console.log('Win condition checked!');
+
         if (isWin) {
-            console.log('GAME IS WON!');
             const newGameState = await this.handleWin({ game_id, player_id });
+
             return newGameState;
         }
-        console.log('Game still not won!');
+
         const isDraw = await this.checkDrawCondition(turns);
 
         if (isDraw) {
-            console.log('GAME IS DRAW!');
             const newGameState = await this.handleDraw({ game_id });
+
             return newGameState;
         }
-        console.log('Game still not draw!');
+
         return game;
     }
 
     private async checkWinCondition(turns: GameTurn[]): Promise<boolean> {
-        console.log('Check win condition - fired!')
-
         const { player: { id: player_id }, row, column } = turns.slice(-1)[0];
 
         // Check the row
         const horizontal = turns.filter((turn) => turn.row === row && turn.player?.id === player_id);
-        console.log('Horizontal ', horizontal)
+
         if (horizontal.length === 3)
             return true;
 
         // Check the column
         const vertical = turns.filter((turn) => turn.column === column && turn.player?.id === player_id);
-        console.log('Vertical ', vertical)
+
         if (vertical.length === 3)
             return true;
 
@@ -103,15 +99,11 @@ export class GameLogicService implements IGameInstanceService {
         if (diagonal1.length === 3 || diagonal2.length === 3)
             return true;
 
-        console.log('Game not won!');
-
         // Game going on
         return false;
     }
 
     private async checkDrawCondition(turns: GameTurn[]): Promise<boolean> {
-        console.log('CHECK DRAW - FIRED!');
-        console.log(turns)
         if (turns && turns.length === 9)
             return true;
 
@@ -119,17 +111,14 @@ export class GameLogicService implements IGameInstanceService {
     }
 
     private async handleWin(setWinnerDTO: SetWinnerDTO): Promise<Game> {
-        console.log('Game logic service - Handle win fired!');
-
         await this.gameService.setWinner(setWinnerDTO);
+
         const newGameState = await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
 
         return newGameState;
     }
 
     private async handleDraw(requestGameDTO: RequestGameDTO): Promise<Game> {
-        console.log('Game logic service - Handle draw fired!');
-
         const newGameState = await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
 
         return newGameState;
@@ -137,24 +126,20 @@ export class GameLogicService implements IGameInstanceService {
 
     async processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game> {
         const { game_id, player_id } = forfeitData;
-        console.log(`Process forfeit: gameId - ${game_id}, playerId - ${player_id}`);
+
         const game = await this.gameService.getGameById({ game_id });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
-        console.log('Process forfeit - game found');
 
         const winnerId = game.host.id === player_id ? game.guest.id : game.host.id;
-        console.log('Process forfeit - winner id: ', winnerId);
+
         const newGameState = await this.handleWin({ game_id, player_id: winnerId });
-        console.log('Process forfeit - new game state');
-        console.log(newGameState);
+
         return newGameState;
     }
 
     async getGameTurns(gameId: string): Promise<GameTurnDataType[]> {
-        console.log('Process turn - Get game turns');
-
         const game = await this.gameService.getGameById({ game_id: gameId });
 
         if (!game)

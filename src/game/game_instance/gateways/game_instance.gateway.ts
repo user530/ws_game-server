@@ -19,17 +19,23 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
     private readonly gameInstanceService: GameInstanceService
   ) { }
 
-  handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
-    console.log('User connected!');
-    // Read header - Auth token
-    // Retrieve user from the token
-    // Validate eglible user
-    // Return game turns (GameTurnDataType[])
+  async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+    const { gameId } = client.handshake.auth;
+
+    const turnEvents = await this.gameInstanceService.handleConnection(gameId);
 
     if (!client.recovered) {
       console.log('Initial connection...Joining room');
       client.join('test');
     }
+
+    // Return to client all game turns
+    if (Array.isArray(turnEvents))
+      turnEvents.forEach((turnEvent) => client.emit(turnEvent.command, turnEvent));
+
+    // Error event
+    else
+      client.emit(turnEvents.type, turnEvents);
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {

@@ -112,10 +112,8 @@ export class GameInstanceService implements IGameInstanceService {
 
     async handleConnection(gameId: string): Promise<GameEventNewTurn[] | ErrorEvent> {
         try {
-            console.log('Game instance - Handle connection');
             const gameTurnsData = await this.gameLogicService.getGameTurns(gameId);
-            console.log('Game turns data: ');
-            console.log(gameTurnsData);
+
             const newTurnEvents = gameTurnsData.map(
                 newTurnData => this.eventCreatorService.prepareNewTurnEvent(newTurnData)
             )
