@@ -14,6 +14,7 @@ interface IGameInstanceService {
     lastTurnResult({ gameStatus, gameWinner }: { gameStatus: GameStatus, gameWinner: Player }): GameTurnResult;
     lastTurnMark({ gameHost, lastTurn }: { gameHost: Player, lastTurn: GameTurn }): GameTurnDataType['mark'];
     processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game>;
+    getGameTurns(gameId: string): Promise<GameTurnDataType[]>;
 }
 
 
@@ -149,5 +150,22 @@ export class GameLogicService implements IGameInstanceService {
         console.log('Process forfeit - new game state');
         console.log(newGameState);
         return newGameState;
+    }
+
+    async getGameTurns(gameId: string): Promise<GameTurnDataType[]> {
+        console.log('Process turn - Get game turns');
+
+        const game = await this.gameService.getGameById({ game_id: gameId });
+
+        if (!game)
+            throw new NotFoundException('Game is not found!');
+
+        const gameTurnsData: GameTurnDataType[] = game.turns.map(
+            ({ row, column, player: { id: playerId } }) => ({
+                column, row, mark: playerId === game.host.id ? 'X' : 'O'
+            })
+        )
+
+        return gameTurnsData;
     }
 }
