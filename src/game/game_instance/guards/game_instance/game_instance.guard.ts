@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { GameStatus } from '@user530/ws_game_shared/enums';
-import { Observable } from 'rxjs';
 import { Socket } from 'socket.io';
 import { GameService } from 'src/database/services';
 

@@ -38,7 +38,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
     if (!client.recovered) {
       console.log('Initial connection...Joining room');
-      client.join('test');
+      client.join(gameId);
     }
 
     // Return to client all game turns
@@ -58,13 +58,15 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   async wsGameMakeTurnListener(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
     const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
 
+    const { game_id: gameId } = payload.data;
+
     // Turn that ended the game
     if (Array.isArray(turnResultEvents))
-      turnResultEvents.forEach(event => this.server.emit(event.command, event));
+      turnResultEvents.forEach(event => this.server.to(gameId).emit(event.command, event));
 
     // Regular turn
     else if (turnResultEvents.type === 'game_event')
-      this.server.emit(turnResultEvents.command, turnResultEvents);
+      this.server.to(gameId).emit(turnResultEvents.command, turnResultEvents);
 
     // Error -> Emit to sender
     else
@@ -75,9 +77,11 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   async wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
     const forfeitEvent = await this.gameInstanceService.handleForfeitMessage(payload);
 
+    const { game_id: gameId } = payload.data;
+
     // Forfeit event
     if (forfeitEvent.type === 'game_event')
-      this.server.emit(forfeitEvent.command, forfeitEvent);
+      this.server.to(gameId).emit(forfeitEvent.command, forfeitEvent);
 
     // Error -> Emit to sender
     else
