@@ -1,7 +1,8 @@
 import { Type } from 'class-transformer';
-import { GameCommandMakeTurn, GameCommandDataType as IGameCommandData } from '../../../shared/interfaces/ws-messages'
-import { Equals, IsEnum, IsNotEmpty, IsNotEmptyObject, IsNumber, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
-import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
+import { GameCommandMakeTurn, GameCommandDataType as IGameCommandData } from '@user530/ws_game_shared/interfaces/ws-messages';
+import { GameTableCol, GameTableRow } from '@user530/ws_game_shared/enums';
+import { Equals, IsEnum, IsNotEmpty, IsNumber, IsObject, IsUUID, ValidateNested } from 'class-validator';
+import { GameCommand, MessageType } from '@user530/ws_game_shared/types';
 
 class GameCommandDataType implements IGameCommandData {
     @IsNotEmpty()
@@ -21,21 +22,19 @@ class GameCommandDataType implements IGameCommandData {
     column: GameTableCol;
 }
 
-export class MadeTurnDTO implements GameCommandMakeTurn {
+export class MakeTurnDTO implements GameCommandMakeTurn {
     @IsNotEmpty()
     @IsNumber()
     @Equals(1)
     version: 1;
 
     @IsNotEmpty()
-    @IsString()
-    @Equals('game_command')
-    type: 'game_command';
+    @IsEnum(MessageType)
+    type: MessageType.GameCommand;
 
     @IsNotEmpty()
-    @IsString()
-    @Equals('make_turn')
-    command: 'make_turn';
+    @IsEnum(GameCommand)
+    command: GameCommand.MakeTurn;
 
     @IsObject()
     @ValidateNested()

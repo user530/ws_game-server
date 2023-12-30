@@ -1,5 +1,5 @@
-import { GameTableCol, GameTableRow } from 'src/shared/enums/game-turn';
-import { MigrationInterface, QueryRunner, Table } from "typeorm"
+import { MigrationInterface, QueryRunner, Table } from "typeorm";
+import { GameTableCol, GameTableRow } from '@user530/ws_game_shared/enums';
 
 export class CreateGameTurnsTable1700143531783 implements MigrationInterface {
 

@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
-import { GameTableRow, GameTableCol } from 'src/shared/enums/game-turn';
+import { GameTableRow, GameTableCol } from '@user530/ws_game_shared/enums';
 
 export class CreateGameTurnDTO {
     @IsNotEmpty()

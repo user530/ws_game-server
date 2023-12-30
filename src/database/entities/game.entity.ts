@@ -2,7 +2,7 @@ import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, JoinColum
 import { Player } from './player.entity';
 import { GameTurn } from './game-turn.entity';
 import { ConflictException } from '@nestjs/common'
-import { GameStatus } from 'src/shared/enums/game';
+import { GameStatus } from '@user530/ws_game_shared/enums';
 
 
 @Entity()
@@ -33,7 +33,7 @@ export class Game {
 
     @OneToMany(() => GameTurn, (turn) => turn.game)
     @JoinColumn({ name: 'game_turns' })
-    turns: GameTurn;
+    turns: GameTurn[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

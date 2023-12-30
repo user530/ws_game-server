@@ -1,5 +1,5 @@
-import { GameStatus } from 'src/shared/enums/game';
-import { MigrationInterface, QueryRunner, Table } from "typeorm"
+import { MigrationInterface, QueryRunner, Table } from "typeorm";
+import { GameStatus } from '@user530/ws_game_shared/enums';
 
 export class CreateGameTable1700143513180 implements MigrationInterface {
 

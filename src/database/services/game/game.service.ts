@@ -1,8 +1,8 @@
-import { ConflictException, Injectable, NotFoundException, } from '@nestjs/common';
+import { ConflictException, Injectable, NotAcceptableException, NotFoundException, UnauthorizedException, } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateGameDTO, RequestGameDTO, RequestJoinGameDTO, RequestPlayerGamesDTO, UpdateGameStatusDTO } from 'src/database/dtos/game';
+import { CreateGameDTO, RequestGameDTO, RequestJoinGameDTO, RequestPlayerGamesDTO, SetWinnerDTO, UpdateGameStatusDTO } from 'src/database/dtos/game';
 import { Game, Player } from 'src/database/entities';
-import { GameStatus } from 'src/shared/enums/game';
+import { GameStatus } from '@user530/ws_game_shared/enums';
 import { In, Repository } from 'typeorm';
 
 interface IGameControls {
@@ -25,7 +25,7 @@ export class GameService implements IGameControls {
     ) { }
 
     getGameById(requestGameDTO: RequestGameDTO): Promise<Game | null> {
-        return this.gameRepository.findOneBy({ id: requestGameDTO.game_id });
+        return this.gameRepository.findOne({ where: { id: requestGameDTO.game_id }, relations: ['turns'] });
     }
 
     getAllPlayerGames(requestPlayerGames: RequestPlayerGamesDTO): Promise<Game[]> {
@@ -40,7 +40,8 @@ export class GameService implements IGameControls {
                 order:
                 {
                     createdAt: 'ASC',
-                }
+                },
+                relations: ['turns']
             }
         );
     }
@@ -55,7 +56,8 @@ export class GameService implements IGameControls {
                 order:
                 {
                     createdAt: 'DESC',
-                }
+                },
+                relations: ['turns']
             },
         );
     }
@@ -114,7 +116,7 @@ export class GameService implements IGameControls {
 
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
         const { game_id, new_status } = updateGameStatusDTO;
-        const gameToUpdate: Game = await this.gameRepository.findOneBy({ id: game_id });
+        const gameToUpdate: Game = await this.gameRepository.findOne({ where: { id: game_id }, relations: ['turns'] });
 
         if (!gameToUpdate)
             throw new NotFoundException('Game not found!');
@@ -122,6 +124,30 @@ export class GameService implements IGameControls {
         gameToUpdate.status = new_status;
 
         return this.gameRepository.save(gameToUpdate);
+    }
+
+    async setWinner(setWinnerDTO: SetWinnerDTO): Promise<Game> {
+        const { game_id, player_id } = setWinnerDTO;
+
+        const game = await this.gameRepository.findOneBy({ id: game_id });
+
+        if (!game)
+            throw new NotFoundException('Game is not found!');
+
+        if (game.status !== GameStatus.InProgress)
+            throw new NotAcceptableException('Game is not active!');
+
+        const winingPlayer = await this.playerRepository.findOneBy({ id: player_id })
+
+        if (!winingPlayer)
+            throw new NotFoundException('Player not found!');
+
+        if (game.host.id !== player_id && game.guest.id !== player_id)
+            throw new UnauthorizedException('Unauthorized user!');
+
+        game.winner = winingPlayer;
+
+        return this.gameRepository.save(game);
     }
 
     async clearEmptyGames(): Promise<void> {
