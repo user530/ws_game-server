@@ -4,9 +4,9 @@ import { GameStatus } from '@user530/ws_game_shared/enums';
 export class UpdateGameStatusDTO {
     @IsNotEmpty()
     @IsUUID()
-    game_id: string;
+    gameId: string;
 
     @IsNotEmpty()
     @IsEnum(GameStatus)
-    new_status: GameStatus;
+    newStatus: GameStatus;
 }

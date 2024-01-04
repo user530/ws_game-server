@@ -25,7 +25,7 @@ export class GameService implements IGameControls {
     ) { }
 
     getGameById(requestGameDTO: RequestGameDTO): Promise<Game | null> {
-        return this.gameRepository.findOne({ where: { id: requestGameDTO.game_id }, relations: ['turns'] });
+        return this.gameRepository.findOne({ where: { id: requestGameDTO.gameId }, relations: ['turns'] });
     }
 
     getAllPlayerGames(requestPlayerGames: RequestPlayerGamesDTO): Promise<Game[]> {
@@ -34,7 +34,7 @@ export class GameService implements IGameControls {
                 where:
                 {
                     host: {
-                        id: requestPlayerGames.player_id
+                        id: requestPlayerGames.playerId
                     }
                 },
                 order:
@@ -64,7 +64,7 @@ export class GameService implements IGameControls {
 
     async hostGame(createGameDTO: CreateGameDTO): Promise<Game> {
 
-        const host: Player = await this.playerRepository.findOneBy({ id: createGameDTO.host_id })
+        const host: Player = await this.playerRepository.findOneBy({ id: createGameDTO.hostId })
 
         if (!host)
             throw new NotFoundException('Host not found!');
@@ -86,12 +86,12 @@ export class GameService implements IGameControls {
 
     async joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game> {
 
-        const host: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.host_id })
+        const host: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.hostId })
 
         if (!host)
             throw new NotFoundException('Host is not found!');
 
-        const guest: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.guest_id });
+        const guest: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.guestId });
 
         if (!guest)
             throw new NotFoundException('Guest is not found!');
@@ -115,21 +115,21 @@ export class GameService implements IGameControls {
     }
 
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
-        const { game_id, new_status } = updateGameStatusDTO;
-        const gameToUpdate: Game = await this.gameRepository.findOne({ where: { id: game_id }, relations: ['turns'] });
+        const { gameId, newStatus } = updateGameStatusDTO;
+        const gameToUpdate: Game = await this.gameRepository.findOne({ where: { id: gameId }, relations: ['turns'] });
 
         if (!gameToUpdate)
             throw new NotFoundException('Game not found!');
 
-        gameToUpdate.status = new_status;
+        gameToUpdate.status = newStatus;
 
         return this.gameRepository.save(gameToUpdate);
     }
 
     async setWinner(setWinnerDTO: SetWinnerDTO): Promise<Game> {
-        const { game_id, player_id } = setWinnerDTO;
+        const { gameId, playerId } = setWinnerDTO;
 
-        const game = await this.gameRepository.findOneBy({ id: game_id });
+        const game = await this.gameRepository.findOneBy({ id: gameId });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
@@ -137,15 +137,15 @@ export class GameService implements IGameControls {
         if (game.status !== GameStatus.InProgress)
             throw new NotAcceptableException('Game is not active!');
 
-        const winingPlayer = await this.playerRepository.findOneBy({ id: player_id })
+        const winningPlayer = await this.playerRepository.findOneBy({ id: playerId })
 
-        if (!winingPlayer)
+        if (!winningPlayer)
             throw new NotFoundException('Player not found!');
 
-        if (game.host.id !== player_id && game.guest.id !== player_id)
+        if (game.host.id !== playerId && game.guest.id !== playerId)
             throw new UnauthorizedException('Unauthorized user!');
 
-        game.winner = winingPlayer;
+        game.winner = winningPlayer;
 
         return this.gameRepository.save(game);
     }

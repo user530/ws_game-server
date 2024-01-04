@@ -3,9 +3,9 @@ import { IsNotEmpty, IsUUID } from 'class-validator';
 export class SetWinnerDTO {
     @IsNotEmpty()
     @IsUUID()
-    game_id: string;
+    gameId: string;
 
     @IsNotEmpty()
     @IsUUID()
-    player_id: string;
+    playerId: string;
 }

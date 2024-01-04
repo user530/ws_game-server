@@ -4,11 +4,11 @@ import { GameTableRow, GameTableCol } from '@user530/ws_game_shared/enums';
 export class CreateGameTurnDTO {
     @IsNotEmpty()
     @IsUUID()
-    game_id: string;
+    gameId: string;
 
     @IsNotEmpty()
     @IsUUID()
-    player_id: string;
+    playerId: string;
 
     @IsNotEmpty()
     @IsEnum(GameTableRow)

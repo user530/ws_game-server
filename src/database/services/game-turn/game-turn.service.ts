@@ -27,7 +27,7 @@ export class GameTurnService implements IGameTurnControls {
         return this.gameturnRepository.find({
             where:
             {
-                id: requestGameTurnDTO.game_id,
+                id: requestGameTurnDTO.gameId,
             }
         });
     }
@@ -35,9 +35,9 @@ export class GameTurnService implements IGameTurnControls {
     async addGameTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<GameTurn> {
         console.log('GameTurnService - AddGameTurn');
 
-        const { game_id, player_id, row, column } = createGameTurnDTO;
+        const { gameId, playerId, row, column } = createGameTurnDTO;
 
-        const game = await this.gameRepository.findOne({ where: { id: game_id }, relations: ['turns'] });
+        const game = await this.gameRepository.findOne({ where: { id: gameId }, relations: ['turns'] });
 
         // Check that game exists
         if (!game)
@@ -53,7 +53,7 @@ export class GameTurnService implements IGameTurnControls {
         if (status !== GameStatus.InProgress)
             throw new NotAcceptableException('Game is not active!');
 
-        const player = await this.playerRepository.findOneBy({ id: player_id });
+        const player = await this.playerRepository.findOneBy({ id: playerId });
 
         // Check valid player
         if (!player)
