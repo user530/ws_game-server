@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { createErrorEvent, createNewTurnEvent, createGameWonEvent, createGameDrawEvent } from '@user530/ws_game_shared/creators/events'
-import { ErrorEvent, GameEventGameDraw, GameEventGameWon, GameEventNewTurn, GameTurnDataType } from '@user530/ws_game_shared/interfaces/ws-events';
+import { createErrorEvent, createInstanceNewTurnEvent, createInstanceGameWonEvent, createInstanceGameDrawEvent } from '@user530/ws_game_shared/creators/events'
+import { ErrorEvent, GameEventGameDraw, GameEventGameWon, GameEventNewTurn, GameEventTurnData, GameEventWinnerData } from '@user530/ws_game_shared/interfaces/ws-events';
 
 interface IGameInstanceEventsService {
     prepareErrorEvent(errorData: Pick<ErrorEvent, 'code' | 'message'>): ErrorEvent;
-    prepareNewTurnEvent(newTurnData: GameTurnDataType): GameEventNewTurn;
-    prepareGameWonEvent(winnerData: GameEventGameWon['data']): GameEventGameWon;
+    prepareNewTurnEvent(newTurnData: GameEventTurnData): GameEventNewTurn;
+    prepareGameWonEvent(winnerData: GameEventWinnerData): GameEventGameWon;
     prepareGameDrawEvent(): GameEventGameDraw;
 }
 
@@ -15,15 +15,15 @@ export class GameInstanceEventsService implements IGameInstanceEventsService {
         return createErrorEvent(errorData);
     }
 
-    prepareNewTurnEvent(newTurnData: GameTurnDataType): GameEventNewTurn {
-        return createNewTurnEvent(newTurnData);
+    prepareNewTurnEvent(newTurnData: GameEventTurnData): GameEventNewTurn {
+        return createInstanceNewTurnEvent(newTurnData);
     }
 
-    prepareGameWonEvent(winnerData: { player_id: string; }): GameEventGameWon {
-        return createGameWonEvent(winnerData);
+    prepareGameWonEvent(winnerData: GameEventWinnerData): GameEventGameWon {
+        return createInstanceGameWonEvent(winnerData);
     }
 
     prepareGameDrawEvent(): GameEventGameDraw {
-        return createGameDrawEvent();
+        return createInstanceGameDrawEvent();
     }
 }

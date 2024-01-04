@@ -39,7 +39,8 @@ export class GameInstanceGuard implements CanActivate {
   async isValidUser(userId: string, gameId: string): Promise<boolean> {
     console.log('Is valid user fired');
     console.log(userId, gameId)
-    const game = await this.gameService.getGameById({ game_id: gameId });
+
+    const game = await this.gameService.getGameById({ gameId });
 
     if (!game)
       return false;

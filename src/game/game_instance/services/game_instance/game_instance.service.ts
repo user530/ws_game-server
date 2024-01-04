@@ -60,7 +60,7 @@ export class GameInstanceService implements IGameInstanceService {
 
             // Return Event/Events, based on the turn result
             if (turnResult === GameTurnResult.Win) {
-                const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: turnData.player_id });
+                const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ playerName: newGameState.winner.name });
 
                 return [newTurnEvent, gameWonEvent];
             }
@@ -93,7 +93,7 @@ export class GameInstanceService implements IGameInstanceService {
 
             const newGameState = await this.gameLogicService.processForfeit(data);
 
-            const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ player_id: newGameState.winner.id });
+            const gameWonEvent = this.eventCreatorService.prepareGameWonEvent({ playerName: newGameState.winner.name });
 
             return gameWonEvent;
         } catch (error) {

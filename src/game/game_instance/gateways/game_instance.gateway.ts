@@ -58,7 +58,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   async wsGameMakeTurnListener(@ConnectedSocket() client: Socket, @MessageBody() payload: MakeTurnDTO): Promise<void> {
     const turnResultEvents = await this.gameInstanceService.handleMakeTurnMessage(payload);
 
-    const { game_id: gameId } = payload.data;
+    const { gameId } = payload.data;
 
     // Turn that ended the game
     if (Array.isArray(turnResultEvents))
@@ -77,7 +77,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
   async wsGameForfeitListener(@ConnectedSocket() client: Socket, @MessageBody() payload: ForfeitMatchDTO): Promise<void> {
     const forfeitEvent = await this.gameInstanceService.handleForfeitMessage(payload);
 
-    const { game_id: gameId } = payload.data;
+    const { gameId } = payload.data;
 
     // Forfeit event
     if (forfeitEvent.type === 'game_event')

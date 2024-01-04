@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { GameService, GameTurnService } from 'src/database/services';
 import { GameStatus, GameFieldSquare, GameTurnResult } from '@user530/ws_game_shared/enums';
-import { GameCommandDataType } from '@user530/ws_game_shared/interfaces/ws-messages';
-import { GameTurnDataType } from '@user530/ws_game_shared/interfaces/ws-events';
+import { GameCommandTurnData, GameCommandForfeitData } from '@user530/ws_game_shared/interfaces/ws-messages';
+import { GameEventTurnData } from '@user530/ws_game_shared/interfaces/ws-events';
 import { getGridSquare } from '@user530/ws_game_shared/helpers';
 import { CreateGameTurnDTO } from 'src/database/dtos/game-turn';
 import { Game, GameTurn, Player } from 'src/database/entities';
@@ -10,11 +10,11 @@ import { RequestGameDTO, SetWinnerDTO } from 'src/database/dtos/game';
 
 interface IGameInstanceService {
     registerTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<void>;
-    processTurn(turnData: GameCommandDataType): Promise<Game>;
+    processTurn(turnData: GameCommandTurnData): Promise<Game>;
     lastTurnResult({ gameStatus, gameWinner }: { gameStatus: GameStatus, gameWinner: Player }): GameTurnResult;
-    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player, lastTurn: GameTurn }): GameTurnDataType['mark'];
-    processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game>;
-    getGameTurns(gameId: string): Promise<GameTurnDataType[]>;
+    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player, lastTurn: GameTurn }): GameEventTurnData['mark'];
+    processForfeit(forfeitData: GameCommandForfeitData): Promise<Game>;
+    getGameTurns(gameId: string): Promise<GameEventTurnData[]>;
 }
 
 
@@ -33,7 +33,7 @@ export class GameLogicService implements IGameInstanceService {
             : GameTurnResult.Not_Decided
     }
 
-    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player; lastTurn: GameTurn; }): GameTurnDataType['mark'] {
+    lastTurnMark({ gameHost, lastTurn }: { gameHost: Player; lastTurn: GameTurn; }): GameEventTurnData['mark'] {
         return lastTurn.player.id === gameHost.id ? 'X' : 'O';
     }
 
@@ -41,10 +41,10 @@ export class GameLogicService implements IGameInstanceService {
         await this.gameTurnService.addGameTurn(createGameTurnDTO);
     }
 
-    async processTurn(turnData: GameCommandDataType): Promise<Game> {
-        const { game_id, player_id } = turnData;
+    async processTurn(turnData: GameCommandTurnData): Promise<Game> {
+        const { gameId, playerId } = turnData;
 
-        const game = await this.gameService.getGameById({ game_id });
+        const game = await this.gameService.getGameById({ gameId });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
@@ -54,7 +54,7 @@ export class GameLogicService implements IGameInstanceService {
         const isWin = await this.checkWinCondition(turns);
 
         if (isWin) {
-            const newGameState = await this.handleWin({ game_id, player_id });
+            const newGameState = await this.handleWin({ gameId, playerId });
 
             return newGameState;
         }
@@ -62,7 +62,7 @@ export class GameLogicService implements IGameInstanceService {
         const isDraw = await this.checkDrawCondition(turns);
 
         if (isDraw) {
-            const newGameState = await this.handleDraw({ game_id });
+            const newGameState = await this.handleDraw({ gameId });
 
             return newGameState;
         }
@@ -113,39 +113,39 @@ export class GameLogicService implements IGameInstanceService {
     private async handleWin(setWinnerDTO: SetWinnerDTO): Promise<Game> {
         await this.gameService.setWinner(setWinnerDTO);
 
-        const newGameState = await this.gameService.updateGameStatus({ game_id: setWinnerDTO.game_id, new_status: GameStatus.Completed });
+        const newGameState = await this.gameService.updateGameStatus({ gameId: setWinnerDTO.gameId, newStatus: GameStatus.Completed });
 
         return newGameState;
     }
 
     private async handleDraw(requestGameDTO: RequestGameDTO): Promise<Game> {
-        const newGameState = await this.gameService.updateGameStatus({ game_id: requestGameDTO.game_id, new_status: GameStatus.Completed });
+        const newGameState = await this.gameService.updateGameStatus({ gameId: requestGameDTO.gameId, newStatus: GameStatus.Completed });
 
         return newGameState;
     }
 
-    async processForfeit(forfeitData: Pick<GameCommandDataType, 'game_id' | 'player_id'>): Promise<Game> {
-        const { game_id, player_id } = forfeitData;
+    async processForfeit(forfeitData: GameCommandForfeitData): Promise<Game> {
+        const { gameId, playerId } = forfeitData;
 
-        const game = await this.gameService.getGameById({ game_id });
+        const game = await this.gameService.getGameById({ gameId });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
 
-        const winnerId = game.host.id === player_id ? game.guest.id : game.host.id;
+        const winnerId = game.host.id === playerId ? game.guest.id : game.host.id;
 
-        const newGameState = await this.handleWin({ game_id, player_id: winnerId });
+        const newGameState = await this.handleWin({ gameId, playerId: winnerId });
 
         return newGameState;
     }
 
-    async getGameTurns(gameId: string): Promise<GameTurnDataType[]> {
-        const game = await this.gameService.getGameById({ game_id: gameId });
+    async getGameTurns(gameId: string): Promise<GameEventTurnData[]> {
+        const game = await this.gameService.getGameById({ gameId });
 
         if (!game)
             throw new NotFoundException('Game is not found!');
 
-        const gameTurnsData: GameTurnDataType[] = game.turns.map(
+        const gameTurnsData: GameEventTurnData[] = game.turns.map(
             ({ row, column, player: { id: playerId } }) => ({
                 column, row, mark: playerId === game.host.id ? 'X' : 'O'
             })

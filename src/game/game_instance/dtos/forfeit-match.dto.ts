@@ -1,16 +1,16 @@
 import { Type } from 'class-transformer';
-import { GameCommandForfeit, GameCommandDataType as IGameCommandData } from '@user530/ws_game_shared/interfaces/ws-messages';
+import { GameCommandForfeit, GameCommandForfeitData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { Equals, IsEnum, IsNotEmpty, IsNumber, IsObject, IsUUID, ValidateNested } from 'class-validator';
 import { GameCommand, MessageType } from '@user530/ws_game_shared/types';
 
-class GameCommandDataType implements Pick<IGameCommandData, 'game_id' | 'player_id'> {
+class GameCommandDataType implements GameCommandForfeitData {
     @IsNotEmpty()
     @IsUUID()
-    game_id: string;
+    gameId: string;
 
     @IsNotEmpty()
     @IsUUID()
-    player_id: string;
+    playerId: string;
 }
 
 export class ForfeitMatchDTO implements GameCommandForfeit {
