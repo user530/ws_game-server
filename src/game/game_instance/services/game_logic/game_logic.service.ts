@@ -71,16 +71,16 @@ export class GameLogicService implements IGameInstanceService {
     }
 
     private async checkWinCondition(turns: GameTurn[]): Promise<boolean> {
-        const { player: { id: player_id }, row, column } = turns.slice(-1)[0];
+        const { player: { id: playerId }, row, column } = turns.slice(-1)[0];
 
         // Check the row
-        const horizontal = turns.filter((turn) => turn.row === row && turn.player?.id === player_id);
+        const horizontal = turns.filter((turn) => turn.row === row && turn.player?.id === playerId);
 
         if (horizontal.length === 3)
             return true;
 
         // Check the column
-        const vertical = turns.filter((turn) => turn.column === column && turn.player?.id === player_id);
+        const vertical = turns.filter((turn) => turn.column === column && turn.player?.id === playerId);
 
         if (vertical.length === 3)
             return true;
@@ -89,12 +89,12 @@ export class GameLogicService implements IGameInstanceService {
         const diagonal1 = turns.filter(
             (turn) =>
                 [GameFieldSquare.Square_1, GameFieldSquare.Square_5, GameFieldSquare.Square_9]
-                    .includes(getGridSquare(turn.row, turn.column)) && turn.player?.id === player_id);
+                    .includes(getGridSquare(turn.row, turn.column)) && turn.player?.id === playerId);
 
         const diagonal2 = turns.filter(
             (turn) =>
                 [GameFieldSquare.Square_3, GameFieldSquare.Square_5, GameFieldSquare.Square_7]
-                    .includes(getGridSquare(turn.row, turn.column)) && turn.player?.id === player_id);
+                    .includes(getGridSquare(turn.row, turn.column)) && turn.player?.id === playerId);
 
         if (diagonal1.length === 3 || diagonal2.length === 3)
             return true;

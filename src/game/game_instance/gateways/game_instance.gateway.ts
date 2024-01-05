@@ -21,7 +21,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
     private readonly gameInstanceGuard: GameInstanceGuard,
   ) { }
 
-  async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+  async handleConnection(@ConnectedSocket() client: Socket) {
     const isValid = await this.gameInstanceGuard.canActivate(
       {
         switchToWs: () => ({ getClient: () => client })
