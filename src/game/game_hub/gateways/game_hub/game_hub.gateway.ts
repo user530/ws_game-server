@@ -17,9 +17,9 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
     private readonly gameHubService: GameHubService
   ) { }
 
-  handleConnection(client: any) {
-    const connection = this.gameHubService.handleConnection();
-    console.log(connection);
+  async handleConnection(@ConnectedSocket() client: Socket) {
+    const gamesUpdatedEvent = await this.gameHubService.handleConnection();
+    client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
   }
 
   @SubscribeMessage(HubCommand.HostGame)
