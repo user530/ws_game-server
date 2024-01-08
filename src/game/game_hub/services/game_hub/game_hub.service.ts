@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ErrorEvent, HubEventGameData, HubEventLobbyData, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
+import { HubLogicService } from '../hub_logic/hub_logic.service';
+import { GameHubEventsService } from '../game_hub_events/game_hub_events.service';
 
 interface IGameHubService {
-    handleConnection(): Promise<string>;
+    handleConnection(): Promise<HubEventGamesUpdated>;
     handleHostGameMessage(): Promise<string>;
     handleJoinGameMessage(): Promise<string>;
     handleLeaveHubMessage(): Promise<string>;
@@ -10,8 +12,16 @@ interface IGameHubService {
 
 @Injectable()
 export class GameHubService implements IGameHubService {
-    async handleConnection(): Promise<string> {
-        return 'HUB EVENT - GAMES UPDATED';
+    constructor(
+        private readonly hubLogicService: HubLogicService,
+        private readonly eventCreatorService: GameHubEventsService
+    ) { }
+
+    async handleConnection(): Promise<HubEventGamesUpdated> {
+
+        const gamesData = await this.hubLogicService.getOpenLobbies();
+
+        return this.eventCreatorService.prepareGamesUpdatedEvent(gamesData);
     }
 
     async handleHostGameMessage(): Promise<string> {
