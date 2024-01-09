@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { HubEventGameData } from '@user530/ws_game_shared/interfaces/ws-events';
+import { HubCommandHostData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { Game } from 'src/database/entities';
 import { GameService } from 'src/database/services';
 
 interface IHubLogicService {
     getOpenLobbies(): Promise<HubEventGameData[]>
-
+    getHostedGame(hostData: HubCommandHostData): Promise<HubEventGameData>
 }
 
 
@@ -15,19 +16,28 @@ export class HubLogicService implements IHubLogicService {
         private readonly gameService: GameService,
     ) { }
 
+    async getHostedGame(hostData: HubCommandHostData): Promise<HubEventGameData> {
+        const { playerId: hostId } = hostData;
+        const newGame = await this.gameService.hostGame({ hostId });
+        const gameData = this.gameToHubGameData(newGame);
+
+        return gameData;
+    }
+
+    async getOpenLobbies(): Promise<HubEventGameData[]> {
+        const games = await this.getHostedGames();
+        const gamesData = games.map((game) => (this.gameToHubGameData(game)));
+
+        return gamesData;
+    }
+
     private async getHostedGames(): Promise<Game[]> {
         const games = await this.gameService.getHostedGames();
         return games;
     }
 
-    private gamesToHubGameData(games: Game[]): HubEventGameData[] {
-        return games.map(({ id, host: { name } }) => ({ gameId: id, hostName: name }));
-    }
-
-    async getOpenLobbies(): Promise<HubEventGameData[]> {
-        const games = await this.getHostedGames();
-        const gamesData = this.gamesToHubGameData(games);
-
-        return gamesData;
+    private gameToHubGameData(game: Game): HubEventGameData {
+        const { id: gameId, host: { name: hostName } } = game;
+        return { gameId, hostName };
     }
 }
