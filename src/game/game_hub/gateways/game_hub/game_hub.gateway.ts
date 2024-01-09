@@ -4,11 +4,14 @@ import { HubCommandHostGame, HubCommandJoinGame, HubCommandLeaveHub } from '@use
 import { HubCommand } from '@user530/ws_game_shared/types';
 import { Server, Socket } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
+import { HostGameDTO } from '../../dtos';
+import { UsePipes, ValidationPipe } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: '*',
   namespace: '/hub'
 })
+@UsePipes(new ValidationPipe())
 export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandler {
   @WebSocketServer()
   private server: Server;
@@ -23,13 +26,25 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
   }
 
   @SubscribeMessage(HubCommand.HostGame)
-  async wsHubHostGameListener(@ConnectedSocket() client: Socket, @MessageBody() hostGameMessage: HubCommandHostGame): Promise<void> {
+  async wsHubHostGameListener(@ConnectedSocket() client: Socket, @MessageBody() hostGameMessage: HostGameDTO): Promise<void> {
     console.log('HOST GAME MESSAGE RECIEVED!');
     console.log(client.handshake.auth);
     console.log(hostGameMessage);
 
-    const host = this.gameHubService.handleHostGameMessage();
-    console.log(host);
+    const hostGameEvents = await this.gameHubService.handleHostGameMessage(hostGameMessage);
+
+    // Send lobby data to the host and new game list to the others
+    if (Array.isArray(hostGameEvents)) {
+      const [movedToLobbyEvent, gamesUpdatedEvent] = hostGameEvents;
+      // To host
+      client.emit(movedToLobbyEvent.command, movedToLobbyEvent);
+      // To others
+      client.broadcast.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+    }
+    // Error -> Emit to sender
+    else {
+      client.emit(hostGameEvents.type, hostGameEvents);
+    }
   }
 
   @SubscribeMessage(HubCommand.JoinGame)
