@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ErrorEvent, HubEventGameData, HubEventLobbyData, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
 import { HubLogicService } from '../hub_logic/hub_logic.service';
 import { GameHubEventsService } from '../game_hub_events/game_hub_events.service';
+import { HostGameDTO } from '../../dtos';
 
 interface IGameHubService {
     handleConnection(): Promise<HubEventGamesUpdated>;
-    handleHostGameMessage(): Promise<string>;
+    handleHostGameMessage(payload: HostGameDTO): Promise<ErrorEvent | [HubEventMovedToLobby, HubEventGamesUpdated]>;
     handleJoinGameMessage(): Promise<string>;
     handleLeaveHubMessage(): Promise<HubEventQuitHub>;
 }
@@ -24,8 +25,31 @@ export class GameHubService implements IGameHubService {
         return this.eventCreatorService.prepareGamesUpdatedEvent(gamesData);
     }
 
-    async handleHostGameMessage(): Promise<string> {
-        return 'HUB EVENT - MOVED TO LOBBY TO HOST; HUB EVENT - GAMES UPDATED TO OTHERS';
+    async handleHostGameMessage(payload: HostGameDTO): Promise<ErrorEvent | [HubEventMovedToLobby, HubEventGamesUpdated]> {
+        try {
+            const { data } = payload;
+
+            // Create game and get lobby data
+            const lobbyData = await this.hubLogicService.getHostedGame(data);
+            const movedToLobbyEvent = this.eventCreatorService.prepareMovedToLobbyEvent(lobbyData);
+
+            // Get updated lobby list
+            const gamesData = await this.hubLogicService.getOpenLobbies();
+            const gamesUpdatedEvent = this.eventCreatorService.prepareGamesUpdatedEvent(gamesData);
+
+            return [movedToLobbyEvent, gamesUpdatedEvent];
+        } catch (error) {
+            // Default err object
+            const errObject = { status: 500, message: 'Something went wrong' };
+
+            // Reset error data if the error is recognised
+            if (error instanceof HttpException) {
+                errObject.status = error.getStatus();
+                errObject.message = error.message;
+            }
+
+            return this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message });
+        }
     }
 
     async handleJoinGameMessage(): Promise<string> {
