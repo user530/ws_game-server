@@ -7,7 +7,7 @@ interface IGameHubService {
     handleConnection(): Promise<HubEventGamesUpdated>;
     handleHostGameMessage(): Promise<string>;
     handleJoinGameMessage(): Promise<string>;
-    handleLeaveHubMessage(): Promise<string>;
+    handleLeaveHubMessage(): Promise<HubEventQuitHub>;
 }
 
 @Injectable()
@@ -32,8 +32,8 @@ export class GameHubService implements IGameHubService {
         return 'HUB EVENT - MOVED TO LOBBY TO HOST; HUB EVENT - GAMES UPDATED TO OTHERS';
     }
 
-    async handleLeaveHubMessage(): Promise<string> {
-        return 'HUB EVENT - QUIT HUB';
+    async handleLeaveHubMessage(): Promise<HubEventQuitHub> {
+        return this.eventCreatorService.prepareQuitHubEvent();
     }
 
 }

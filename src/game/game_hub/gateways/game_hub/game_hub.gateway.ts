@@ -1,5 +1,5 @@
 import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, WebSocketServer, MessageBody } from '@nestjs/websockets';
-import { GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners'
+import { GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { HubCommandHostGame, HubCommandJoinGame, HubCommandLeaveHub } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { HubCommand } from '@user530/ws_game_shared/types';
 import { Server, Socket } from 'socket.io';
@@ -48,7 +48,7 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
     console.log(client.handshake.auth);
     console.log(leaveHubMessage);
 
-    const leave = this.gameHubService.handleLeaveHubMessage();
-    console.log(leave);
+    const leftHubEvent = await this.gameHubService.handleLeaveHubMessage();
+    client.emit(leftHubEvent.command);
   }
 }
