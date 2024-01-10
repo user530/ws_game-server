@@ -1,4 +1,4 @@
-import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { Player } from './player.entity';
 import { GameTurn } from './game-turn.entity';
 import { ConflictException } from '@nestjs/common'
@@ -38,7 +38,7 @@ export class Game {
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 
-    @CreateDateColumn({ name: 'updated_at', onUpdate: 'CURRENT_TIMESTAMP' })
+    @UpdateDateColumn({ name: 'updated_at', onUpdate: 'CURRENT_TIMESTAMP' })
     updatedAt: Date;
 
     @BeforeInsert()

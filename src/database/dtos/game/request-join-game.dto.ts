@@ -7,5 +7,5 @@ export class RequestJoinGameDTO {
 
     @IsNotEmpty()
     @IsUUID()
-    hostId: string;
+    gameId: string;
 }

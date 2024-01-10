@@ -84,34 +84,68 @@ export class GameService implements IGameControls {
         return this.gameRepository.save(newGame);
     }
 
+    // async joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game> {
+
+    //     const host: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.hostId })
+
+    //     if (!host)
+    //         throw new NotFoundException('Host is not found!');
+
+    //     const guest: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.guestId });
+
+    //     if (!guest)
+    //         throw new NotFoundException('Guest is not found!');
+
+    //     if (guest.id === host.id)
+    //         throw new ConflictException('Host and guest must be unique entities!');
+
+    //     const gameToJoin: Game = await this.gameRepository.findOneBy(
+    //         {
+    //             host: { id: host.id },
+    //             status: GameStatus.Pending,
+    //         });
+
+    //     if (!gameToJoin)
+    //         throw new NotFoundException('No pendings game from the user!');
+
+    //     gameToJoin.guest = guest;
+    //     gameToJoin.status = GameStatus.InProgress;
+
+    //     return this.gameRepository.save(gameToJoin);
+    // }
+
     async joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game> {
-
-        const host: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.hostId })
-
-        if (!host)
-            throw new NotFoundException('Host is not found!');
-
-        const guest: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.guestId });
+        const { gameId, guestId } = requestJoinGameDTO;
+        const guest: Player = await this.playerRepository.findOneBy({ id: guestId });
 
         if (!guest)
             throw new NotFoundException('Guest is not found!');
 
-        if (guest.id === host.id)
-            throw new ConflictException('Host and guest must be unique entities!');
-
-        const gameToJoin: Game = await this.gameRepository.findOneBy(
+        const gameToJoin = await this.gameRepository.findOneBy(
             {
-                host: { id: host.id },
-                status: GameStatus.Pending,
+                id: gameId,
             });
 
         if (!gameToJoin)
-            throw new NotFoundException('No pendings game from the user!');
+            throw new NotFoundException('Game is not found!');
 
-        gameToJoin.guest = guest;
-        gameToJoin.status = GameStatus.InProgress;
+        if (gameToJoin.host.id === guestId)
+            throw new ConflictException('Host and guest must be different entities!');
 
-        return this.gameRepository.save(gameToJoin);
+        if (gameToJoin.status !== GameStatus.Pending || gameToJoin.guest !== null)
+            throw new NotAcceptableException('Game is not vacant!');
+
+        const updatedGame = await this.gameRepository.update(
+            { id: gameToJoin.id, updatedAt: gameToJoin.updatedAt },
+            { guest, status: GameStatus.InProgress });
+
+        if (updatedGame.affected === 0)
+            throw new NotAcceptableException('Game is not vacant!');
+
+        return await this.gameRepository.findOneBy(
+            {
+                id: gameId,
+            });
     }
 
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
