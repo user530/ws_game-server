@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { HubEventGameData } from '@user530/ws_game_shared/interfaces/ws-events';
-import { HubCommandHostData } from '@user530/ws_game_shared/interfaces/ws-messages';
+import { HubEventGameData, HubEventLobbyData } from '@user530/ws_game_shared/interfaces/ws-events';
+import { HubCommandHostData, HubCommandJoinData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { Game } from 'src/database/entities';
 import { GameService } from 'src/database/services';
 
 interface IHubLogicService {
     getOpenLobbies(): Promise<HubEventGameData[]>
-    getHostedGame(hostData: HubCommandHostData): Promise<HubEventGameData>
+    getHostedLobby(hostData: HubCommandHostData): Promise<HubEventGameData>
+    getJoinedLobby(joinData: HubCommandJoinData): Promise<HubEventLobbyData>
 }
 
 
@@ -16,7 +17,15 @@ export class HubLogicService implements IHubLogicService {
         private readonly gameService: GameService,
     ) { }
 
-    async getHostedGame(hostData: HubCommandHostData): Promise<HubEventGameData> {
+    async getJoinedLobby(joinData: HubCommandJoinData): Promise<HubEventLobbyData> {
+        const { playerId: guestId, lobbyId: gameId } = joinData;
+        const openGame = await this.gameService.joinGame({ guestId, gameId });
+        const lobbyData = this.gameToHubLobbyData(openGame);
+
+        return lobbyData;
+    }
+
+    async getHostedLobby(hostData: HubCommandHostData): Promise<HubEventGameData> {
         const { playerId: hostId } = hostData;
         const newGame = await this.gameService.hostGame({ hostId });
         const gameData = this.gameToHubGameData(newGame);
@@ -39,5 +48,9 @@ export class HubLogicService implements IHubLogicService {
     private gameToHubGameData(game: Game): HubEventGameData {
         const { id: gameId, host: { name: hostName } } = game;
         return { gameId, hostName };
+    }
+    private gameToHubLobbyData(game: Game): HubEventLobbyData {
+        const { id: gameId, host: { name: hostName } } = game;
+        return { gameId, hostName }
     }
 }
