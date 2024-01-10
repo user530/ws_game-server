@@ -1,5 +1,5 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { ErrorEvent, HubEventGameData, HubEventLobbyData, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
+import { ErrorEvent, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
 import { HubLogicService } from '../hub_logic/hub_logic.service';
 import { GameHubEventsService } from '../game_hub_events/game_hub_events.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
