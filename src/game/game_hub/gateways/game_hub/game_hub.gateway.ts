@@ -1,7 +1,7 @@
-import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, WebSocketServer, MessageBody } from '@nestjs/websockets';
+import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, MessageBody } from '@nestjs/websockets';
 import { GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { HubCommand } from '@user530/ws_game_shared/types';
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
@@ -12,9 +12,6 @@ import { UsePipes, ValidationPipe } from '@nestjs/common';
 })
 @UsePipes(new ValidationPipe())
 export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandler {
-  @WebSocketServer()
-  private server: Server;
-
   constructor(
     private readonly gameHubService: GameHubService
   ) { }
@@ -26,10 +23,6 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
 
   @SubscribeMessage(HubCommand.HostGame)
   async wsHubHostGameListener(@ConnectedSocket() client: Socket, @MessageBody() hostGameMessage: HostGameDTO): Promise<void> {
-    console.log('HOST GAME MESSAGE RECIEVED!');
-    console.log(client.handshake.auth);
-    console.log(hostGameMessage);
-
     const hostGameEvents = await this.gameHubService.handleHostGameMessage(hostGameMessage);
 
     // Send lobby data to the host and new game list to the others
@@ -48,10 +41,6 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
 
   @SubscribeMessage(HubCommand.JoinGame)
   async wsHubJoinGameListener(@ConnectedSocket() client: Socket, @MessageBody() joinGameMessage: JoinGameDTO): Promise<void> {
-    console.log('JOIN GAME MESSAGE RECIEVED!');
-    console.log(client.handshake.auth);
-    console.log(joinGameMessage);
-
     const joinGameEvents = await this.gameHubService.handleJoinGameMessage(joinGameMessage);
 
     // Send lobby data to the guest and new game list to the others
@@ -70,9 +59,6 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
 
   @SubscribeMessage(HubCommand.LeaveHub)
   async wsHubLeaveHubListener(@ConnectedSocket() client: Socket): Promise<void> {
-    console.log('LEAVE HUB MESSAGE RECIEVED!');
-    console.log(client.handshake.auth);
-
     const leftHubEvent = await this.gameHubService.handleLeaveHubMessage();
     client.emit(leftHubEvent.command);
   }
