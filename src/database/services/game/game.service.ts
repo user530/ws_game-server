@@ -85,33 +85,35 @@ export class GameService implements IGameControls {
     }
 
     async joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game> {
-
-        const host: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.hostId })
-
-        if (!host)
-            throw new NotFoundException('Host is not found!');
-
-        const guest: Player = await this.playerRepository.findOneBy({ id: requestJoinGameDTO.guestId });
+        const { gameId, guestId } = requestJoinGameDTO;
+        const guest: Player = await this.playerRepository.findOneBy({ id: guestId });
 
         if (!guest)
             throw new NotFoundException('Guest is not found!');
 
-        if (guest.id === host.id)
-            throw new ConflictException('Host and guest must be unique entities!');
+        const updatedGame = await this.gameRepository.manager.transaction(
+            async (transactionalEntityManager): Promise<Game> => {
+                const gameToJoin: Game = await transactionalEntityManager.getRepository(Game).findOne({ where: { id: gameId } });
 
-        const gameToJoin: Game = await this.gameRepository.findOneBy(
-            {
-                host: { id: host.id },
-                status: GameStatus.Pending,
-            });
+                if (!gameToJoin)
+                    throw new NotFoundException('Game is not found!');
 
-        if (!gameToJoin)
-            throw new NotFoundException('No pendings game from the user!');
+                if (gameToJoin.host.id === guestId)
+                    throw new ConflictException('Host and guest must be different entities!');
 
-        gameToJoin.guest = guest;
-        gameToJoin.status = GameStatus.InProgress;
+                if (gameToJoin.status !== GameStatus.Pending || gameToJoin.guest !== null)
+                    throw new NotAcceptableException('Game is not vacant!');
 
-        return this.gameRepository.save(gameToJoin);
+                gameToJoin.guest = guest;
+                gameToJoin.status = GameStatus.InProgress;
+
+                const updatedGame = await transactionalEntityManager.save(gameToJoin);
+
+                return updatedGame;
+            }
+        )
+
+        return updatedGame;
     }
 
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
