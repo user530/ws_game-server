@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, ErrorEvent } from '@user530/ws_game_shared/interfaces/ws-events';
+import { GameLobbyEventsService } from '../game_lobby_events/game_lobby_events.service';
 
 interface IGameLobbyService {
     handleConnection(): Promise<void>;
@@ -10,6 +11,11 @@ interface IGameLobbyService {
 
 @Injectable()
 export class GameLobbyService implements IGameLobbyService {
+
+    constructor(
+        private readonly eventCreatorService: GameLobbyEventsService,
+    ) { }
+
     async handleConnection(): Promise<void> {
         console.log('Game Lobby Service - Handle Connection Fired');
         return
