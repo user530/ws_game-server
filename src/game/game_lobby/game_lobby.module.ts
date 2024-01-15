@@ -7,6 +7,7 @@ import { GameLobbyEventsService } from './services/game_lobby_events/game_lobby_
     imports: [],
     providers: [
         GameLobbyGateway,
+        GameLobbyService,
     ],
 })
 export class GameLobbyModule { }
