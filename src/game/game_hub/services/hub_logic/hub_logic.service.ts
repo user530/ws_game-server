@@ -49,7 +49,7 @@ export class HubLogicService implements IHubLogicService {
     private gameToHubGameData(game: Game): HubEventGameData {
         const { id: gameId, host: { id: hostId, name: hostName }, guest, status } = game;
 
-        if (guest !== null)
+        if (guest)
             throw new Error('Hub Game - Guest spot already taken!');
 
         if (status !== GameStatus.Pending)
