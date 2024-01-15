@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateGameDTO, RequestGameDTO, RequestJoinGameDTO, RequestPlayerGamesDTO, SetWinnerDTO, UpdateGameStatusDTO } from 'src/database/dtos/game';
 import { Game, Player } from 'src/database/entities';
 import { GameStatus } from '@user530/ws_game_shared/enums';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 
 interface IGameControls {
     getGameById(requestGameDTO: RequestGameDTO): Promise<Game>;
@@ -51,11 +51,12 @@ export class GameService implements IGameControls {
             {
                 where:
                 {
+                    guest: IsNull(),
                     status: GameStatus.Pending,
                 },
                 order:
                 {
-                    createdAt: 'DESC',
+                    createdAt: 'ASC',
                 },
                 relations: ['turns']
             },
@@ -105,7 +106,6 @@ export class GameService implements IGameControls {
                     throw new NotAcceptableException('Game is not vacant!');
 
                 gameToJoin.guest = guest;
-                gameToJoin.status = GameStatus.InProgress;
 
                 const updatedGame = await transactionalEntityManager.save(gameToJoin);
 
