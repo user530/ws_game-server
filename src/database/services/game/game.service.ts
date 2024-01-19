@@ -31,12 +31,18 @@ export class GameService implements IGameControls {
     getAllPlayerGames(requestPlayerGames: RequestPlayerGamesDTO): Promise<Game[]> {
         return this.gameRepository.find(
             {
-                where:
-                {
-                    host: {
-                        id: requestPlayerGames.playerId
+                where: [
+                    {
+                        host: {
+                            id: requestPlayerGames.playerId,
+                        }
+                    },
+                    {
+                        guest: {
+                            id: requestPlayerGames.playerId,
+                        }
                     }
-                },
+                ],
                 order:
                 {
                     createdAt: 'ASC',
