@@ -29,11 +29,14 @@ export class GameHubService implements IGameHubService {
 
             // Prepare game DTO and event accordingly
             if (openGame && openGame.status === GameStatus.Pending) {
-
+                console.log('PLAYER HAS OPEN LOBBY!');
+                console.log(openGame);
             }
 
             if (openGame && openGame.status === GameStatus.InProgress) {
                 // PLACEHOLDER -> CREATE NEW HUB EVENT: MOVE TO GAME and prepare data for it here!!!
+                console.log('PLAYER HAS ACTIVE GAME!');
+                console.log(openGame);
             }
 
             // If there is no pending or active games -> prepare lobby list for the player

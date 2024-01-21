@@ -1,6 +1,6 @@
 import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, MessageBody } from '@nestjs/websockets';
 import { GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
-import { HubCommand } from '@user530/ws_game_shared/types';
+import { HubCommand, MessageType } from '@user530/ws_game_shared/types';
 import { Socket } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
@@ -17,8 +17,14 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
   ) { }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-    const gamesUpdatedEvent = await this.gameHubService.handleConnection();
-    client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+    const { userId } = client.handshake.auth;
+    console.log('HUB HANDLE CONNECTION. USER ID: ', userId)
+    const gamesUpdatedEvent = await this.gameHubService.handleConnection({ userId });
+
+    if (gamesUpdatedEvent.type === MessageType.HubEvent) {
+      client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+    }
+
   }
 
   @SubscribeMessage(HubCommand.HostGame)
