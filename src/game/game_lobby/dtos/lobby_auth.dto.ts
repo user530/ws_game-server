@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { LobbyCredentials } from '@user530/ws_game_shared/interfaces/general';
 
-export class LobbyAuthData {
+export class LobbyAuthDTO implements LobbyCredentials {
     @IsNotEmpty()
     @IsString()
     @IsUUID()

@@ -1,8 +1,9 @@
-import { GameStatus } from '@user530/ws_game_shared/enums';
+import { GameStatus, GameTableCol, GameTableRow } from '@user530/ws_game_shared/enums';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsNotEmptyObject, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { Equals, IsArray, IsEnum, IsIn, IsNotEmpty, IsNotEmptyObject, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { HostData, GuestData, StoreGameData, TurnData } from '@user530/ws_game_shared/interfaces/general';
 
-class LobbyHostData {
+class LobbyHostData implements HostData {
     @IsNotEmpty()
     @IsString()
     @IsUUID()
@@ -13,7 +14,7 @@ class LobbyHostData {
     hostName: string;
 }
 
-class LobbyGuestData {
+class LobbyGuestData implements GuestData {
     @IsNotEmpty()
     @IsString()
     @IsUUID()
@@ -24,7 +25,22 @@ class LobbyGuestData {
     guestName: string;
 }
 
-export class LobbyGameData {
+class LobbyTurnData implements TurnData {
+    @IsNotEmpty()
+    @IsEnum(GameTableCol)
+    column: GameTableCol;
+
+    @IsNotEmpty()
+    @IsEnum(GameTableRow)
+    row: GameTableRow;
+
+    @IsNotEmpty()
+    @IsString()
+    @IsIn(['X', 'O'])
+    mark: 'X' | 'O';
+}
+
+export class LobbyDataDTO implements StoreGameData {
     @IsNotEmpty()
     @IsString()
     @IsUUID()
@@ -43,4 +59,9 @@ export class LobbyGameData {
     @IsNotEmpty()
     @IsEnum(GameStatus)
     status: GameStatus;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => LobbyTurnData)
+    turns: LobbyTurnData[];
 }
