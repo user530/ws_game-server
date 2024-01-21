@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { createErrorEvent, createLobbyGuestJoinedEvent, createLobbyGuestLeftEvent, createLobbyToGameEvent, createLobbyToHubEvent } from '@user530/ws_game_shared/creators/events';
-import { ErrorEvent, LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, LobbyEventGameData, LobbyEventJoinedData } from '@user530/ws_game_shared/interfaces/ws-events';
+import { ErrorEvent, LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, LobbyEventToGameData, LobbyEventJoinedData } from '@user530/ws_game_shared/interfaces/ws-events';
 
 interface IGameLobbyEventsService {
     prepareErrorEvent(errorData: Pick<ErrorEvent, 'code' | 'message'>): ErrorEvent;
     prepareGuestJoinedEvent(guestData: LobbyEventJoinedData): LobbyEventGuestJoined;
     prepareGuestLeftEvent(): LobbyEventGuestLeft;
-    prepareMovedToGameEvent(lobbyData: LobbyEventGameData): LobbyEventMovedToGame;
+    prepareMovedToGameEvent(gameData: LobbyEventToGameData): LobbyEventMovedToGame;
     prepareMovedToHubEvent(): LobbyEventMovedToHub;
 }
 
@@ -25,8 +25,8 @@ export class GameLobbyEventsService implements IGameLobbyEventsService {
         return createLobbyGuestLeftEvent();
     }
 
-    prepareMovedToGameEvent(lobbyData: LobbyEventGameData): LobbyEventMovedToGame {
-        return createLobbyToGameEvent(lobbyData);
+    prepareMovedToGameEvent(gameData: LobbyEventToGameData): LobbyEventMovedToGame {
+        return createLobbyToGameEvent(gameData);
     }
 
     prepareMovedToHubEvent(): LobbyEventMovedToHub {

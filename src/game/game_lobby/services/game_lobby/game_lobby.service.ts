@@ -2,11 +2,11 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, ErrorEvent } from '@user530/ws_game_shared/interfaces/ws-events';
 import { GameLobbyEventsService } from '../game_lobby_events/game_lobby_events.service';
 import { LobbyLogicService } from '../lobby_logic/lobby_logic.service';
-import { LobbyAuthData } from '../../dtos/lobby_auth.dto';
+import { LobbyAuthDTO } from '../../dtos';
 import { createLobbyGuestJoinedEvent } from '@user530/ws_game_shared/creators/events';
 
 interface IGameLobbyService {
-    handleConnection(authData: LobbyAuthData): Promise<null | LobbyEventGuestJoined | ErrorEvent>;
+    handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventGuestJoined | ErrorEvent>;
     handleLeaveLobbyMessage(): Promise<void>;
     handleKickGuestMessage(): Promise<void>;
     handleStartGameMessage(): Promise<void>;
@@ -20,7 +20,7 @@ export class GameLobbyService implements IGameLobbyService {
         private readonly lobbyLogicService: LobbyLogicService,
     ) { }
 
-    async handleConnection(authData: LobbyAuthData): Promise<null | LobbyEventGuestJoined | ErrorEvent> {
+    async handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventGuestJoined | ErrorEvent> {
         console.log('Game Lobby Service - Handle Connection Fired');
         try {
             // Validate and get lobby data

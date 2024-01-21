@@ -4,7 +4,6 @@ import { LobbyCommandKickGuest, LobbyCommandLeaveLobby, LobbyCommandStartGame } 
 import { LobbyCommand, MessageType } from '@user530/ws_game_shared/types';
 import { GameLobbyService } from '../../services/game_lobby/game_lobby.service';
 import { Socket, Server } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: '*',

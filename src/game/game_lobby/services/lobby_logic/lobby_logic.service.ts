@@ -1,14 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { GameStatus } from '@user530/ws_game_shared/enums';
 import { GameService, PlayerService } from 'src/database/services';
-import { LobbyAuthData } from '../../dtos/lobby_auth.dto';
 import { Game } from 'src/database/entities';
-import { LobbyGameData } from '../../dtos/lobby_data.dto';
+import { LobbyAuthDTO, LobbyDataDTO } from '../../dtos';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 
 interface ILobbyLogicService {
-    validateLobbyConnection(authData: LobbyAuthData): Promise<LobbyGameData>;
+    validateLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO>;
 }
 
 @Injectable()
@@ -18,9 +17,9 @@ export class LobbyLogicService implements ILobbyLogicService {
         private readonly playerService: PlayerService,
     ) { }
 
-    async validateLobbyConnection(authData: LobbyAuthData): Promise<LobbyGameData> {
+    async validateLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO> {
         console.log('VALIDATE LOBBY SERVICE FIRED'); console.log(authData);
-        const authDTO = plainToClass(LobbyAuthData, authData);
+        const authDTO = plainToClass(LobbyAuthDTO, authData);
         const errors = await validate(authDTO);
         if (errors.length > 0)
             throw new UnauthorizedException('Invalid lobby credentials!');
@@ -30,15 +29,15 @@ export class LobbyLogicService implements ILobbyLogicService {
         return this.lobbyGameToGameData(game);
     }
 
-    private lobbyGameToGameData(game: Game): LobbyGameData {
+    private lobbyGameToGameData(game: Game): LobbyDataDTO {
         const { id: gameId, host: { id: hostId, name: hostName }, guest, status } = game;
 
         return guest
-            ? { gameId, host: { hostId, hostName }, guest: { guestId: guest.id, guestName: guest.name }, status }
-            : { gameId, host: { hostId, hostName }, guest: null, status };
+            ? { gameId, host: { hostId, hostName }, guest: { guestId: guest.id, guestName: guest.name }, status, turns: [] }
+            : { gameId, host: { hostId, hostName }, guest: null, status, turns: [] };
     }
 
-    private async lobbyGetGame(lobbyAuthData: LobbyAuthData): Promise<Game> {
+    private async lobbyGetGame(lobbyAuthData: LobbyAuthDTO): Promise<Game> {
         const { gameId, userId } = lobbyAuthData;
         console.log('LOBBY GET GAME'); console.log(lobbyAuthData);
         const player = await this.playerService.getPlayerById({ id: userId });
