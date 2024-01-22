@@ -1,12 +1,12 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { ErrorEvent, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
+import { ErrorEvent, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub, HubEventMovedToGame } from '@user530/ws_game_shared/interfaces/ws-events';
 import { HubLogicService } from '../hub_logic/hub_logic.service';
 import { GameHubEventsService } from '../game_hub_events/game_hub_events.service';
 import { HostGameDTO, HubAuthDTO, JoinGameDTO } from '../../dtos';
 import { GameStatus } from '@user530/ws_game_shared/enums';
 
 interface IGameHubService {
-    handleConnection(hubAuthDTO: HubAuthDTO): Promise<ErrorEvent | HubEventMovedToLobby | HubEventGamesUpdated>;
+    handleConnection(hubAuthDTO: HubAuthDTO): Promise<ErrorEvent | HubEventMovedToLobby | HubEventMovedToGame | HubEventGamesUpdated>;
     handleHostGameMessage(payload: HostGameDTO): Promise<ErrorEvent | [HubEventMovedToLobby, HubEventGamesUpdated]>;
     handleJoinGameMessage(payload: JoinGameDTO): Promise<ErrorEvent | [HubEventMovedToLobby, HubEventGamesUpdated]>;
     handleLeaveHubMessage(): Promise<HubEventQuitHub>;
@@ -19,30 +19,33 @@ export class GameHubService implements IGameHubService {
         private readonly eventCreatorService: GameHubEventsService
     ) { }
 
-    async handleConnection(hubAuthDTO: HubAuthDTO): Promise<ErrorEvent | HubEventMovedToLobby | HubEventGamesUpdated> {
+    async handleConnection(hubAuthDTO: HubAuthDTO): Promise<ErrorEvent | HubEventMovedToLobby | HubEventMovedToGame | HubEventGamesUpdated> {
         try {
             // Validate user credentials
             await this.hubLogicService.isValidHubConnection(hubAuthDTO);
 
-            // Check if user is already has an open game 
-            const openGame = await this.hubLogicService.getPlayerActiveGame(hubAuthDTO);
+            // Check if user is already has a lobby or game
+            const inProgressData = await this.hubLogicService.getPlayerActiveData(hubAuthDTO);
 
-            // Prepare game DTO and event accordingly
-            if (openGame && openGame.status === GameStatus.Pending) {
+            // If no game, just send the list of open lobbies
+            if (!inProgressData) {
+                // If there is no pending or active games -> prepare lobby list for the player
+                const gamesData = await this.hubLogicService.getOpenLobbies();
+
+                return this.eventCreatorService.prepareGamesUpdatedEvent(gamesData);
+            }
+
+            // If player is the part of some lobby
+            if (inProgressData.status === GameStatus.Pending) {
                 console.log('PLAYER HAS OPEN LOBBY!');
-                console.log(openGame);
+                console.log(inProgressData);
+                return this.eventCreatorService.prepareMovedToLobbyEvent(inProgressData);
             }
 
-            if (openGame && openGame.status === GameStatus.InProgress) {
-                // PLACEHOLDER -> CREATE NEW HUB EVENT: MOVE TO GAME and prepare data for it here!!!
-                console.log('PLAYER HAS ACTIVE GAME!');
-                console.log(openGame);
-            }
-
-            // If there is no pending or active games -> prepare lobby list for the player
-            const gamesData = await this.hubLogicService.getOpenLobbies();
-
-            return this.eventCreatorService.prepareGamesUpdatedEvent(gamesData);
+            // Player is the part of some active game
+            console.log('PLAYER HAS ACTIVE GAME!');
+            console.log(inProgressData);
+            return this.eventCreatorService.prepareMovedToGameEvent(inProgressData);
         } catch (error) {
             // Default err object
             const errObject = { status: 500, message: 'Something went wrong' };

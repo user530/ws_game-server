@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { GameStatus } from '@user530/ws_game_shared/enums';
-import { HubEventLobbyData, HubEventToLobbyData } from '@user530/ws_game_shared/interfaces/ws-events';
+import { HubEventLobbyData, HubEventToGameData, HubEventToLobbyData } from '@user530/ws_game_shared/interfaces/ws-events';
 import { HubCommandHostData, HubCommandJoinData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { Game } from 'src/database/entities';
 import { GameService, PlayerService } from 'src/database/services';
@@ -10,7 +10,7 @@ import { plainToClass } from 'class-transformer';
 
 interface IHubLogicService {
     isValidHubConnection(hubAuthDTO: HubAuthDTO): Promise<boolean>;
-    getPlayerActiveGame(hubAuthDTO: HubAuthDTO): Promise<Game | undefined>
+    getPlayerActiveData(hubAuthDTO: HubAuthDTO): Promise<HubEventToLobbyData | HubEventToGameData | undefined>
     getOpenLobbies(): Promise<HubEventLobbyData[]>;
     getHostedLobby(hostData: HubCommandHostData): Promise<HubEventLobbyData>;
     getJoinedLobby(joinData: HubCommandJoinData): Promise<HubEventToLobbyData>;
@@ -24,9 +24,53 @@ export class HubLogicService implements IHubLogicService {
         private readonly playerService: PlayerService,
     ) { }
 
-    async getPlayerActiveGame(hubAuthDTO: HubAuthDTO): Promise<Game | undefined> {
-        console.log('HUB LOGIC - GET PLAYER ACTIVE GAME FIRED');
+    async getPlayerActiveData(hubAuthDTO: HubAuthDTO): Promise<HubEventToLobbyData | HubEventToGameData | null> {
+        console.log('HUB LOGIC - GET PLAYER ACTIVE DATA FIRED');
         const { userId } = hubAuthDTO;
+        const game = await this.getPlayerActiveGame(userId);
+
+        // No active game
+        if (!game) return null;
+
+        const { id: gameId, host: { id: hostId, name: hostName }, guest, status, turns } = game;
+
+        const hostData = { hostId, hostName };
+
+        // If not guest -> Return pending lobby data
+        if (!guest)
+            return {
+                gameId,
+                host: hostData,
+                guest: null,
+                status: GameStatus.Pending,
+            } as HubEventToLobbyData;
+
+        // Game has guest, destructure the data
+        const guestData = { guestId: guest.id, guestName: guest.name };
+
+        // Return filled lobby data
+        if (status === GameStatus.Pending)
+            return {
+                gameId,
+                host: hostData,
+                guest: guestData,
+                status
+            } as HubEventToLobbyData;
+
+        // Return filled game data
+        if (status === GameStatus.InProgress)
+            return {
+                gameId,
+                host: hostData,
+                guest: guestData,
+                status,
+                turns: turns.map(
+                    ({ player: { id: playerId }, row, column }) => ({ row, column, mark: playerId === hostId ? 'X' : 'O' }))
+            } as HubEventToGameData;
+    }
+
+    private async getPlayerActiveGame(userId: string): Promise<Game | undefined> {
+        console.log('HUB LOGIC - GET PLAYER ACTIVE DATA FIRED');
         const playerGames = await this.getAllGames(userId);
         console.log('All player games fetched');
         console.log(playerGames);
@@ -36,7 +80,6 @@ export class HubLogicService implements IHubLogicService {
                     || game.status === GameStatus.InProgress
             );
         console.log('Active game: '); console.log(activeGame);
-
 
         return activeGame;
     }
