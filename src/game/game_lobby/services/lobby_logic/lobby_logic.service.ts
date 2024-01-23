@@ -7,7 +7,7 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 
 interface ILobbyLogicService {
-    validateLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO>;
+    isValidLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO>;
 }
 
 @Injectable()
@@ -17,19 +17,19 @@ export class LobbyLogicService implements ILobbyLogicService {
         private readonly playerService: PlayerService,
     ) { }
 
-    async validateLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO> {
+    async isValidLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO> {
         console.log('VALIDATE LOBBY SERVICE FIRED'); console.log(authData);
         const authDTO = plainToClass(LobbyAuthDTO, authData);
         const errors = await validate(authDTO);
         if (errors.length > 0)
             throw new UnauthorizedException('Invalid lobby credentials!');
 
-        const game = await this.lobbyGetGame(authData);
+        const game = await this.fetchPlayerGame(authData);
 
-        return this.lobbyGameToGameData(game);
+        return this.gameToLobbyData(game);
     }
 
-    private lobbyGameToGameData(game: Game): LobbyDataDTO {
+    private gameToLobbyData(game: Game): LobbyDataDTO {
         const { id: gameId, host: { id: hostId, name: hostName }, guest, status } = game;
 
         return guest
@@ -37,7 +37,7 @@ export class LobbyLogicService implements ILobbyLogicService {
             : { gameId, host: { hostId, hostName }, guest: null, status, turns: [] };
     }
 
-    private async lobbyGetGame(lobbyAuthData: LobbyAuthDTO): Promise<Game> {
+    private async fetchPlayerGame(lobbyAuthData: LobbyAuthDTO): Promise<Game> {
         const { gameId, userId } = lobbyAuthData;
         console.log('LOBBY GET GAME'); console.log(lobbyAuthData);
         const player = await this.playerService.getPlayerById({ id: userId });
