@@ -5,9 +5,13 @@ import { Game } from 'src/database/entities';
 import { LobbyAuthDTO, LobbyDataDTO } from '../../dtos';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import { LeaveLobbyDataType } from '../../dtos/leave_lobby.dto';
 
 interface ILobbyLogicService {
     isValidLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO>;
+    isPlayerHost(leaveLobbyData: LeaveLobbyDataType): Promise<boolean>;
+    handleGuestLeave(gameId: string): Promise<void>;
+    handleHostLeave(gameId: string): Promise<void>;
 }
 
 @Injectable()
@@ -27,6 +31,44 @@ export class LobbyLogicService implements ILobbyLogicService {
         const game = await this.fetchPlayerGame(authData);
 
         return this.gameToLobbyData(game);
+    }
+
+    async isPlayerHost(leaveLobbyData: LeaveLobbyDataType): Promise<boolean> {
+        console.log('LOBBY LOGIC - IS PLAYER HOST');
+        const { gameId, playerId } = leaveLobbyData;
+        const game = await this.gameService.getGameById({ gameId });
+
+        if (!game)
+            throw new NotFoundException('Game not found!');
+        console.log('IsPlayerHost - Game found'); console.log(game);
+
+        const { host: { id: hostId }, guest: { id: guestId } } = game;
+        if (playerId !== hostId && playerId !== guestId)
+            throw new UnauthorizedException('Player is not a part of the game!');
+        console.log('IsPlayerHost - Player is part of the game. Is host - ', playerId === hostId);
+        return playerId === hostId;
+    }
+
+    async handleGuestLeave(gameId: string): Promise<void> {
+        console.log('LOBBY LOGIC - HANDLE GUEST LEAVE');
+
+        // Clear the guest from the game
+        const vacantGame = await this.gameService.kickGuest({ gameId });
+
+        console.log('Handle guest leave, updated game:'); console.log(vacantGame);
+
+        return;
+    }
+
+    async handleHostLeave(gameId: string): Promise<void> {
+        console.log('LOBBY LOGIC - HANDLE HOST LEAVE');
+
+        // Change game status
+        const abortedGame = await this.gameService.updateGameStatus({ gameId, newStatus: GameStatus.Aborted });
+
+        console.log('Handle host leave, updated game:'); console.log(abortedGame);
+
+        return;
     }
 
     private gameToLobbyData(game: Game): LobbyDataDTO {

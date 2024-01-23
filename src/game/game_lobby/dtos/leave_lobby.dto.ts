@@ -3,7 +3,7 @@ import { LobbyCommand, MessageType } from '@user530/ws_game_shared/types';
 import { Type } from 'class-transformer';
 import { Equals, IsEnum, IsNotEmpty, IsNumber, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
 
-class LeaveLobbyDataType implements LobbyCommandLeaveData {
+export class LeaveLobbyDataType implements LobbyCommandLeaveData {
     @IsNotEmpty()
     @IsString()
     @IsUUID()
