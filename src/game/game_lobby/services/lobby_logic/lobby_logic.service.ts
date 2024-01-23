@@ -42,8 +42,8 @@ export class LobbyLogicService implements ILobbyLogicService {
             throw new NotFoundException('Game not found!');
         console.log('IsPlayerHost - Game found'); console.log(game);
 
-        const { host: { id: hostId }, guest: { id: guestId } } = game;
-        if (playerId !== hostId && playerId !== guestId)
+        const { host: { id: hostId }, guest } = game;
+        if (playerId !== hostId && playerId !== guest?.id)
             throw new UnauthorizedException('Player is not a part of the game!');
         console.log('IsPlayerHost - Player is part of the game. Is host - ', playerId === hostId);
         return playerId === hostId;

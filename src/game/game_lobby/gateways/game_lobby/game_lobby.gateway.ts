@@ -70,11 +70,13 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     const { gameId } = client.handshake.auth;
     const { data } = leaveLobbyMessage;
     const leaveEvents = await this.gameLobbyService.handleLeaveLobbyMessage(data);
-
+    console.log('Leave Lobby Listener - Leave Events: '); console.log(leaveEvents);
     // Handle guest leave
     if (Array.isArray(leaveEvents)) {
+      console.log('Guest left block');
       const guestEvent = leaveEvents[0];
       const hostEvent = leaveEvents[1];
+      console.log(guestEvent); console.log(hostEvent);
       // Emit respective events
       client.emit(guestEvent.command, guestEvent);
       client.broadcast.to(gameId).emit(hostEvent.command, hostEvent);
