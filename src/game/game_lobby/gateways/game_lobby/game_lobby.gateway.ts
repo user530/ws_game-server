@@ -1,9 +1,10 @@
-import { SubscribeMessage, WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
+import { SubscribeMessage, WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer, ConnectedSocket, MessageBody } from '@nestjs/websockets';
 import { GameLobbyMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { LobbyCommandKickGuest, LobbyCommandLeaveLobby, LobbyCommandStartGame } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { LobbyCommand, LobbyEvent, MessageType } from '@user530/ws_game_shared/types';
 import { GameLobbyService } from '../../services/game_lobby/game_lobby.service';
 import { Socket, Server } from 'socket.io';
+import { LeaveLobbyDTO } from '../../dtos';
 
 @WebSocketGateway({
   cors: '*',
@@ -17,7 +18,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     private readonly gameLobbyService: GameLobbyService
   ) { }
 
-  async handleConnection(client: Socket) {
+  async handleConnection(@ConnectedSocket() client: Socket) {
     console.log('LOBBY GATEWAY - CONNECTION ESTABLISHED');
     console.log(client.handshake.auth);
     const { gameId, userId } = client.handshake.auth;
@@ -57,23 +58,40 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     }
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log('LOBBY GATEWAY - CONNECTION CLOSED');
     return
   }
 
   @SubscribeMessage(LobbyCommand.LeaveLobby)
-  async wsLobbyLeaveLobbyListener(socket: Socket, leaveLobbyMessage: LobbyCommandLeaveLobby): Promise<void> {
+  async wsLobbyLeaveLobbyListener(@ConnectedSocket() client: Socket, @MessageBody() leaveLobbyMessage: LeaveLobbyDTO): Promise<void> {
     console.log('LOBBY GATEWAY - LEAVE LOBBY MESSAGE RECIEVED');
-    console.log(socket.data)
-    // If user is host -> Abort the game, emit to both: Move to Hub event
-    // If user is guest -> Update the game (guest is null), Update New Lobby Status to host, Emit to guest Move to Hub, Emit updated game list to Hub(!) 
-    const someEvents = await this.gameLobbyService.handleLeaveLobbyMessage();
-    return
+    console.log(leaveLobbyMessage)
+    const { gameId } = client.handshake.auth;
+    const { data } = leaveLobbyMessage;
+    const leaveEvents = await this.gameLobbyService.handleLeaveLobbyMessage(data);
+
+    // Handle guest leave
+    if (Array.isArray(leaveEvents)) {
+      const guestEvent = leaveEvents[0];
+      const hostEvent = leaveEvents[1];
+      // Emit respective events
+      client.emit(guestEvent.command, guestEvent);
+      client.broadcast.to(gameId).emit(hostEvent.command, hostEvent);
+      // PLACEHOLDER FOR THE HUB UPDATE EVENT!
+    }
+    // Handle host leave
+    else if (leaveEvents.type === MessageType.LobbyEvent) {
+      // Emit leave event to both
+      this.server.to(gameId).emit(leaveEvents.command, leaveEvents);
+    }
+    else {
+      client.emit(leaveEvents.type, leaveEvents)
+    }
   }
 
   @SubscribeMessage(LobbyCommand.KickGuest)
-  async wsLobbyKickGuestListener(socket: Socket, kickGuestMessage: LobbyCommandKickGuest): Promise<void> {
+  async wsLobbyKickGuestListener(@ConnectedSocket() client: Socket, @MessageBody() kickGuestMessage: LobbyCommandKickGuest): Promise<void> {
     console.log('LOBBY GATEWAY - KICK GUEST MESSAGE RECIEVED');
     // Check that player is host, If true -> Update the game (guest is null), Update lobby for the host, Emit to guest Move to Hub, Emit updated game list to Hub(!)
     const someEvents = await this.gameLobbyService.handleKickGuestMessage();
@@ -81,7 +99,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
   }
 
   @SubscribeMessage(LobbyCommand.StartGame)
-  async wsLobbyStartGameListener(socket: Socket, startGameMessage: LobbyCommandStartGame): Promise<void> {
+  async wsLobbyStartGameListener(@ConnectedSocket() client: Socket, @MessageBody() startGameMessage: LobbyCommandStartGame): Promise<void> {
     console.log('LOBBY GATEWAY - START GAME MESSAGE RECIEVED');
     // Check that player is host, if true -> Update the game (status -> in progress), Emit Move to Game to the game room
     const someEvents = await this.gameLobbyService.handleStartGameMessage();
