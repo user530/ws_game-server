@@ -1,7 +1,7 @@
 import { SubscribeMessage, WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import { GameLobbyMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { LobbyCommandKickGuest, LobbyCommandLeaveLobby, LobbyCommandStartGame } from '@user530/ws_game_shared/interfaces/ws-messages';
-import { LobbyCommand, MessageType } from '@user530/ws_game_shared/types';
+import { LobbyCommand, LobbyEvent, MessageType } from '@user530/ws_game_shared/types';
 import { GameLobbyService } from '../../services/game_lobby/game_lobby.service';
 import { Socket, Server } from 'socket.io';
 
@@ -31,19 +31,29 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
       client.join(gameId);
     }
 
-    // No event needed
+    // Host connected, no special interaction required
     if (connectionEvent === null) return;
 
-    // Inform host about the updated game
-    if (connectionEvent.type === MessageType.LobbyEvent) {
-      console.log('Broadcast to the host Guest Joined event');
-      client.broadcast.to(gameId).emit(connectionEvent.command, connectionEvent)
+    // Handle error+move event pair
+    if (Array.isArray(connectionEvent)) {
+      return connectionEvent.forEach(
+        (event) => event.type === MessageType.ErrorMessage
+          // Emit back error event
+          ? client.emit(event.type, event)
+          // Emit back move to hub event
+          : client.emit(event.command, event)
+      )
     }
-    // Emit Error and disconnect user 
-    else {
-      console.log('Error event emit')
-      client.emit(connectionEvent.type, connectionEvent);
-      client.disconnect();
+
+    // Handle Guest connection -> broadcast to the room
+    if (connectionEvent.command === LobbyEvent.GuestJoined) {
+      console.log('Broadcast to the host Guest Joined event');
+      return client.broadcast.to(gameId).emit(connectionEvent.command, connectionEvent)
+    }
+
+    if (connectionEvent.command === LobbyEvent.MovedToGame) {
+      console.log('Emit to user Move To Game event');
+      return client.emit(connectionEvent.command, connectionEvent);
     }
   }
 
