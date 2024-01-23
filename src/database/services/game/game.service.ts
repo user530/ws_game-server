@@ -11,6 +11,7 @@ interface IGameControls {
     getHostedGames(): Promise<Game[]>;
     hostGame(createGameDTO: CreateGameDTO): Promise<Game>;
     joinGame(requestJoinGameDTO: RequestJoinGameDTO): Promise<Game>;
+    kickGuest(requestGameDTO: RequestGameDTO): Promise<Game>;
     updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game>;
     clearEmptyGames(): Promise<void>;
 }
@@ -98,64 +99,141 @@ export class GameService implements IGameControls {
         if (!guest)
             throw new NotFoundException('Guest is not found!');
 
-        const updatedGame = await this.gameRepository.manager.transaction(
-            async (transactionalEntityManager): Promise<Game> => {
-                const gameToJoin: Game = await transactionalEntityManager.getRepository(Game).findOne({ where: { id: gameId } });
+        const updatedGame = await this.gameRepository
+            .manager
+            .transaction(
+                async (transactionalEntityManager): Promise<Game> => {
+                    const gameToJoin: Game = await transactionalEntityManager
+                        .getRepository(Game)
+                        .findOne(
+                            {
+                                where:
+                                {
+                                    id: gameId
+                                }
+                            });
 
-                if (!gameToJoin)
-                    throw new NotFoundException('Game is not found!');
+                    if (!gameToJoin)
+                        throw new NotFoundException('Game is not found!');
 
-                if (gameToJoin.host.id === guestId)
-                    throw new ConflictException('Host and guest must be different entities!');
+                    if (gameToJoin.host.id === guestId)
+                        throw new ConflictException('Host and guest must be different entities!');
 
-                if (gameToJoin.status !== GameStatus.Pending || gameToJoin.guest !== null)
-                    throw new NotAcceptableException('Game is not vacant!');
+                    if (gameToJoin.status !== GameStatus.Pending || gameToJoin.guest !== null)
+                        throw new NotAcceptableException('Game is not vacant!');
 
-                gameToJoin.guest = guest;
+                    gameToJoin.guest = guest;
 
-                const updatedGame = await transactionalEntityManager.save(gameToJoin);
+                    const updatedGame = await transactionalEntityManager.save(gameToJoin);
 
-                return updatedGame;
-            }
-        )
+                    return updatedGame;
+                }
+            )
 
         return updatedGame;
     }
 
+    async kickGuest(requestGameDTO: RequestGameDTO): Promise<Game> {
+        const { gameId } = requestGameDTO;
+        console.log('GAME SERVICE - KICK GUEST'); console.log('Game Id - ', gameId);
+        const vacatedGame = await this.gameRepository
+            .manager
+            .transaction(
+                async (transactionalEntityManager): Promise<Game> => {
+                    const gameToClear = await transactionalEntityManager
+                        .getRepository(Game)
+                        .findOne({
+                            where: {
+                                id: gameId
+                            }
+                        });
+                    console.log('GameToClear - '); console.log(gameToClear);
+                    if (!gameToClear)
+                        throw new NotFoundException('Game is not found!');
+                    console.log('Game exists!');
+                    if (!gameToClear.guest)
+                        throw new NotAcceptableException('There is no guest to kick!');
+                    console.log('Game has guest!');
+                    if (gameToClear.status !== GameStatus.Pending)
+                        throw new NotAcceptableException('Game is already past lobby state!');
+                    console.log('Game has acceptable status!');
+                    gameToClear.guest = null;
+
+                    const updatedGame = await transactionalEntityManager.save(gameToClear);
+                    console.log('Leaving transaction');
+                    return updatedGame;
+                }
+            )
+        console.log('Vacated game:'); console.log(vacatedGame);
+        return vacatedGame;
+    }
+
     async updateGameStatus(updateGameStatusDTO: UpdateGameStatusDTO): Promise<Game> {
         const { gameId, newStatus } = updateGameStatusDTO;
-        const gameToUpdate: Game = await this.gameRepository.findOne({ where: { id: gameId }, relations: ['turns'] });
-
-        if (!gameToUpdate)
-            throw new NotFoundException('Game not found!');
-
-        gameToUpdate.status = newStatus;
-
-        return this.gameRepository.save(gameToUpdate);
+        console.log('GAME SERVICE - UPDATE GAME STATUS'); console.log(`GameId: ${gameId}, new status: ${newStatus}`);
+        const updatedGame = await this.gameRepository
+            .manager
+            .transaction(
+                async (transactionalEntityManager): Promise<Game> => {
+                    const gameToUpdate = await transactionalEntityManager
+                        .getRepository(Game)
+                        .findOne(
+                            {
+                                where:
+                                {
+                                    id: gameId
+                                },
+                                relations: ['turns']
+                            });
+                    console.log('GameToUpdate- '); console.log(gameToUpdate);
+                    if (!gameToUpdate)
+                        throw new NotFoundException('Game not found!');
+                    console.log('Game found.');
+                    gameToUpdate.status = newStatus;
+                    console.log('Leaving transaction');
+                    return await transactionalEntityManager.save(gameToUpdate);
+                }
+            )
+        console.log(updatedGame);
+        return updatedGame;
     }
 
     async setWinner(setWinnerDTO: SetWinnerDTO): Promise<Game> {
         const { gameId, playerId } = setWinnerDTO;
-
-        const game = await this.gameRepository.findOneBy({ id: gameId });
-
-        if (!game)
-            throw new NotFoundException('Game is not found!');
-
-        if (game.status !== GameStatus.InProgress)
-            throw new NotAcceptableException('Game is not active!');
-
-        const winningPlayer = await this.playerRepository.findOneBy({ id: playerId })
-
-        if (!winningPlayer)
-            throw new NotFoundException('Player not found!');
-
-        if (game.host.id !== playerId && game.guest.id !== playerId)
-            throw new UnauthorizedException('Unauthorized user!');
-
-        game.winner = winningPlayer;
-
-        return this.gameRepository.save(game);
+        console.log('GAME SERVICE - SET WINNER'); console.log(`GameId: ${gameId}, playerId: ${playerId}`);
+        const wonGame = await this.gameRepository
+            .manager
+            .transaction(
+                async (transactionalEntityManager): Promise<Game> => {
+                    const gameToWin = await transactionalEntityManager
+                        .getRepository(Game)
+                        .findOneBy(
+                            { id: gameId }
+                        );
+                    console.log('Game to win - '); console.log(gameToWin);
+                    if (!gameToWin)
+                        throw new NotFoundException('Game is not found!');
+                    console.log('Game found');
+                    if (gameToWin.status !== GameStatus.InProgress)
+                        throw new NotAcceptableException('Game is not active!');
+                    console.log('Game is active');
+                    const winner = await transactionalEntityManager
+                        .getRepository(Player)
+                        .findOneBy({ id: playerId })
+                    console.log('Winner - '); console.log(winner);
+                    if (!winner)
+                        throw new NotFoundException('Player not found!');
+                    console.log('Player found');
+                    if (gameToWin.host.id !== playerId && gameToWin.guest.id !== playerId)
+                        throw new UnauthorizedException('Unauthorized user!');
+                    console.log('Winner is applicable for the game');
+                    gameToWin.winner = winner;
+                    console.log('Leaving transaction');
+                    return await transactionalEntityManager.save(gameToWin);
+                }
+            )
+        console.log('Won game:'); console.log(wonGame);
+        return wonGame;
     }
 
     async clearEmptyGames(): Promise<void> {
