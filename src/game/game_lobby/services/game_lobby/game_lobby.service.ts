@@ -3,10 +3,11 @@ import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, Lobb
 import { GameLobbyEventsService } from '../game_lobby_events/game_lobby_events.service';
 import { LobbyLogicService } from '../lobby_logic/lobby_logic.service';
 import { LobbyAuthDTO } from '../../dtos';
-import { createLobbyGuestJoinedEvent } from '@user530/ws_game_shared/creators/events';
+import { createLobbyGuestJoinedEvent, createLobbyToGameEvent } from '@user530/ws_game_shared/creators/events';
+import { GameStatus } from '@user530/ws_game_shared/enums';
 
 interface IGameLobbyService {
-    handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventGuestJoined | ErrorEvent>;
+    handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventMovedToGame | LobbyEventGuestJoined | [ErrorEvent, LobbyEventMovedToHub]>;
     handleLeaveLobbyMessage(): Promise<void>;
     handleKickGuestMessage(): Promise<void>;
     handleStartGameMessage(): Promise<void>;
@@ -20,19 +21,25 @@ export class GameLobbyService implements IGameLobbyService {
         private readonly lobbyLogicService: LobbyLogicService,
     ) { }
 
-    async handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventGuestJoined | ErrorEvent> {
+    async handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventMovedToGame | LobbyEventGuestJoined | [ErrorEvent, LobbyEventMovedToHub]> {
         console.log('Game Lobby Service - Handle Connection Fired');
         try {
             // Validate and get lobby data
-            const gameData = await this.lobbyLogicService.validateLobbyConnection(authData);
+            const { gameId, guest, host, status, turns } = await this.lobbyLogicService.isValidLobbyConnection(authData);
+
             console.log('Handle connection, validated game data');
-            console.log(gameData);
-            // If connected player is a guest, prepare event
-            if (gameData.guest && gameData.guest.guestId === authData.userId)
-                return createLobbyGuestJoinedEvent({ ...gameData.guest })
+            console.log({ gameId, guest, host, status, turns });
+
+            // If player is already part of the active game
+            if (status === GameStatus.InProgress)
+                return createLobbyToGameEvent({ gameId, guest, host, status, turns });
+
+            // Here the game is still a pending lobby, check if connected player is a guest
+            if (guest && guest.guestId === authData.userId)
+                return createLobbyGuestJoinedEvent({ ...guest })
 
             // Host connected, return null
-            else return null
+            return null
         } catch (error) {
             // Default err object
             const errObject = { status: 500, message: 'Something went wrong' };
@@ -43,7 +50,10 @@ export class GameLobbyService implements IGameLobbyService {
                 errObject.message = error.message;
             }
 
-            return this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message });
+            return [
+                this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message }),
+                this.eventCreatorService.prepareMovedToHubEvent()
+            ];
         }
     }
 
