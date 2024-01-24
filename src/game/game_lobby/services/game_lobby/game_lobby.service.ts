@@ -2,7 +2,7 @@ import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common
 import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, ErrorEvent } from '@user530/ws_game_shared/interfaces/ws-events';
 import { GameLobbyEventsService } from '../game_lobby_events/game_lobby_events.service';
 import { LobbyLogicService } from '../lobby_logic/lobby_logic.service';
-import { KickGuestDataType, LeaveLobbyDataType, LobbyAuthDTO } from '../../dtos';
+import { KickGuestDataType, LeaveLobbyDataType, LobbyAuthDTO, StartGameDataType } from '../../dtos';
 import { createLobbyGuestJoinedEvent, createLobbyGuestLeftEvent, createLobbyToGameEvent, createLobbyToHubEvent } from '@user530/ws_game_shared/creators/events';
 import { GameStatus } from '@user530/ws_game_shared/enums';
 
@@ -10,7 +10,7 @@ interface IGameLobbyService {
     handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventMovedToGame | LobbyEventGuestJoined | [ErrorEvent, LobbyEventMovedToHub]>;
     handleLeaveLobbyMessage(leaveData: LeaveLobbyDataType): Promise<LobbyEventMovedToHub | [LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent>;
     handleKickGuestMessage(kickData: KickGuestDataType): Promise<[LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent>;
-    handleStartGameMessage(): Promise<void>;
+    handleStartGameMessage(startData: StartGameDataType): Promise<LobbyEventMovedToGame | ErrorEvent>;
 }
 
 @Injectable()
@@ -98,7 +98,7 @@ export class GameLobbyService implements IGameLobbyService {
             const { gameId, playerId } = kickData;
             console.log(`GameId: ${gameId}, playerId: ${playerId}`);
             const isHost = await this.lobbyLogicService.isPlayerHost(kickData);
-            console.log('Handle leave message, is host - ', isHost);
+            console.log('Handle kick message, is host - ', isHost);
 
             // Handle unauthorized user
             if (!isHost) throw new UnauthorizedException('Unauthorized user!');
@@ -124,8 +124,32 @@ export class GameLobbyService implements IGameLobbyService {
         }
     }
 
-    async handleStartGameMessage(): Promise<void> {
-        console.log('Game Lobby Service - Handle Start Game Message Fired');
-        return
+    async handleStartGameMessage(startData: StartGameDataType): Promise<LobbyEventMovedToGame | ErrorEvent> {
+        try {
+            console.log('Game Lobby Service - Handle Start Game Message Fired');
+            const { gameId, playerId } = startData;
+            console.log(`GameId: ${gameId}, playerId: ${playerId}`);
+            const isHost = await this.lobbyLogicService.isPlayerHost(startData);
+            console.log('Handle start message, is host - ', isHost);
+
+            // Handle unauthorized user
+            if (!isHost) throw new UnauthorizedException('Unauthorized user!');
+
+            // If user is host -> Start game
+            const startedGame = await this.lobbyLogicService.startGame(gameId);
+            
+            return createLobbyToGameEvent(startedGame);
+        } catch (error) {
+            // Default err object
+            const errObject = { status: 500, message: 'Something went wrong' };
+
+            // Reset error data if the error is recognised
+            if (error instanceof HttpException) {
+                errObject.status = error.getStatus();
+                errObject.message = error.message;
+            }
+
+            return this.eventCreatorService.prepareErrorEvent({ code: errObject.status, message: errObject.message });
+        }
     }
 }
