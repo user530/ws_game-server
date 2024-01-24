@@ -65,3 +65,15 @@ export class LobbyDataDTO implements StoreGameData {
     @Type(() => LobbyTurnData)
     turns: LobbyTurnData[];
 }
+
+export class ActiveLobbyDataDTO extends LobbyDataDTO {
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => LobbyGuestData)
+    guest: LobbyGuestData;
+
+    @IsNotEmpty()
+    @IsEnum(GameStatus)
+    @Equals(GameStatus.InProgress)
+    status: GameStatus.InProgress;
+}
