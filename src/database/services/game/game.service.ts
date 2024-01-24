@@ -189,6 +189,9 @@ export class GameService implements IGameControls {
                     if (!gameToUpdate)
                         throw new NotFoundException('Game not found!');
                     console.log('Game found.');
+                    if (newStatus === GameStatus.InProgress && gameToUpdate.guest === null)
+                        throw new NotAcceptableException('Can\'t start a game without the guest!');
+                    console.log('Guest check for the InProgress update passed');
                     gameToUpdate.status = newStatus;
                     console.log('Leaving transaction');
                     return await transactionalEntityManager.save(gameToUpdate);
