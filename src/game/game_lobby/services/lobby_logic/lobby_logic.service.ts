@@ -2,16 +2,16 @@ import { Injectable, NotFoundException, BadRequestException, UnauthorizedExcepti
 import { GameStatus } from '@user530/ws_game_shared/enums';
 import { GameService, PlayerService } from 'src/database/services';
 import { Game } from 'src/database/entities';
-import { LobbyAuthDTO, LobbyDataDTO } from '../../dtos';
+import { LobbyAuthDTO, LobbyDataDTO, LeaveLobbyDataType, ActiveLobbyDataDTO } from '../../dtos';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
-import { LeaveLobbyDataType } from '../../dtos/leave_lobby.dto';
 
 interface ILobbyLogicService {
     isValidLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO>;
     isPlayerHost(leaveLobbyData: LeaveLobbyDataType): Promise<boolean>;
     handleGuestLeave(gameId: string): Promise<void>;
     handleHostLeave(gameId: string): Promise<void>;
+    startGame(gameId: string): Promise<ActiveLobbyDataDTO>;
 }
 
 @Injectable()
@@ -20,6 +20,18 @@ export class LobbyLogicService implements ILobbyLogicService {
         private readonly gameService: GameService,
         private readonly playerService: PlayerService,
     ) { }
+
+    async startGame(gameId: string): Promise<ActiveLobbyDataDTO> {
+        console.log('START GAME SERVICE FIRED'); console.log(gameId);
+
+        const startedGame = await this.gameService.updateGameStatus({ gameId, newStatus: GameStatus.InProgress });
+
+        console.log('New active game:'); console.log(startedGame);
+        // We started game -> narrow the status type
+        const lobbyData = this.gameToLobbyData(startedGame) as ActiveLobbyDataDTO;
+
+        return lobbyData;
+    }
 
     async isValidLobbyConnection(authData: LobbyAuthDTO): Promise<LobbyDataDTO> {
         console.log('VALIDATE LOBBY SERVICE FIRED'); console.log(authData);
