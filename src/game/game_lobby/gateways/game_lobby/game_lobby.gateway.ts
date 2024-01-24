@@ -1,10 +1,9 @@
 import { SubscribeMessage, WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer, ConnectedSocket, MessageBody } from '@nestjs/websockets';
 import { GameLobbyMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
-import { LobbyCommandKickGuest, LobbyCommandLeaveLobby, LobbyCommandStartGame } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { LobbyCommand, LobbyEvent, MessageType } from '@user530/ws_game_shared/types';
 import { GameLobbyService } from '../../services/game_lobby/game_lobby.service';
 import { Socket, Server } from 'socket.io';
-import { LeaveLobbyDTO } from '../../dtos';
+import { KickGuestDTO, LeaveLobbyDTO, StartGameDTO } from '../../dtos';
 
 @WebSocketGateway({
   cors: '*',
@@ -93,7 +92,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
   }
 
   @SubscribeMessage(LobbyCommand.KickGuest)
-  async wsLobbyKickGuestListener(@ConnectedSocket() client: Socket, @MessageBody() kickGuestMessage: LobbyCommandKickGuest): Promise<void> {
+  async wsLobbyKickGuestListener(@ConnectedSocket() client: Socket, @MessageBody() kickGuestMessage: KickGuestDTO): Promise<void> {
     console.log('LOBBY GATEWAY - KICK GUEST MESSAGE RECIEVED');
     console.log(kickGuestMessage)
     const { gameId } = client.handshake.auth;
@@ -121,10 +120,24 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
   }
 
   @SubscribeMessage(LobbyCommand.StartGame)
-  async wsLobbyStartGameListener(@ConnectedSocket() client: Socket, @MessageBody() startGameMessage: LobbyCommandStartGame): Promise<void> {
+  async wsLobbyStartGameListener(@ConnectedSocket() client: Socket, @MessageBody() startGameMessage: StartGameDTO): Promise<void> {
     console.log('LOBBY GATEWAY - START GAME MESSAGE RECIEVED');
+    console.log(startGameMessage)
+    const { gameId } = client.handshake.auth;
+    const { data } = startGameMessage;
+
     // Check that player is host, if true -> Update the game (status -> in progress), Emit Move to Game to the game room
-    const someEvents = await this.gameLobbyService.handleStartGameMessage();
-    return
+    const startEvent = await this.gameLobbyService.handleStartGameMessage(data);
+
+    console.log('Start Game Listener - Start Event: '); console.log(startEvent);
+
+    // Handle normal behaviour
+    if (startEvent.type === MessageType.LobbyEvent) {
+      this.server.to(gameId).emit(startEvent.command, startEvent.data);
+    }
+    // Handle error event
+    else {
+      client.emit(startEvent.type, startEvent)
+    }
   }
 }
