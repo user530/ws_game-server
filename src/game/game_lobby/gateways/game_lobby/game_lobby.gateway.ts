@@ -74,8 +74,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     // Handle guest leave
     if (Array.isArray(leaveEvents)) {
       console.log('Guest left block');
-      const guestEvent = leaveEvents[0];
-      const hostEvent = leaveEvents[1];
+      const [guestEvent, hostEvent] = leaveEvents;
       console.log(guestEvent); console.log(hostEvent);
       // Emit respective events
       client.emit(guestEvent.command, guestEvent);
@@ -87,6 +86,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
       // Emit leave event to both
       this.server.to(gameId).emit(leaveEvents.command, leaveEvents);
     }
+    // Handle error event
     else {
       client.emit(leaveEvents.type, leaveEvents)
     }
@@ -95,9 +95,29 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
   @SubscribeMessage(LobbyCommand.KickGuest)
   async wsLobbyKickGuestListener(@ConnectedSocket() client: Socket, @MessageBody() kickGuestMessage: LobbyCommandKickGuest): Promise<void> {
     console.log('LOBBY GATEWAY - KICK GUEST MESSAGE RECIEVED');
+    console.log(kickGuestMessage)
+    const { gameId } = client.handshake.auth;
+    const { data } = kickGuestMessage;
+
     // Check that player is host, If true -> Update the game (guest is null), Update lobby for the host, Emit to guest Move to Hub, Emit updated game list to Hub(!)
-    const someEvents = await this.gameLobbyService.handleKickGuestMessage();
-    return
+    const kickEvents = await this.gameLobbyService.handleKickGuestMessage(data);
+
+    console.log('Kick Guest Listener - Kick Events: '); console.log(kickEvents);
+
+    // Handle normal behaviour
+    if (Array.isArray(kickEvents)) {
+      console.log('Guest left block');
+      const [guestEvent, hostEvent] = kickEvents;
+      console.log(guestEvent); console.log(hostEvent);
+      // Emit respective events (This time in reverse because client is host)
+      client.broadcast.to(gameId).emit(guestEvent.command, guestEvent);
+      client.emit(hostEvent.command, hostEvent);
+      // PLACEHOLDER FOR THE HUB UPDATE EVENT!
+    }
+    // Handle error event
+    else {
+      client.emit(kickEvents.type, kickEvents)
+    }
   }
 
   @SubscribeMessage(LobbyCommand.StartGame)
