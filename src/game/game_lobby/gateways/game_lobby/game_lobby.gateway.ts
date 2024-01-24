@@ -133,7 +133,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
 
     // Handle normal behaviour
     if (startEvent.type === MessageType.LobbyEvent) {
-      this.server.to(gameId).emit(startEvent.command, startEvent.data);
+      this.server.to(gameId).emit(startEvent.command, startEvent);
     }
     // Handle error event
     else {
