@@ -11,7 +11,7 @@ import { KickGuestDTO, LeaveLobbyDTO, StartGameDTO } from '../../dtos';
 })
 export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  private server: Server;
+  private server: any;
 
   constructor(
     private readonly gameLobbyService: GameLobbyService
@@ -71,19 +71,23 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     const leaveEvents = await this.gameLobbyService.handleLeaveLobbyMessage(data);
     console.log('Leave Lobby Listener - Leave Events: '); console.log(leaveEvents);
     // Handle guest leave
-    if (Array.isArray(leaveEvents)) {
+    if (Array.isArray(leaveEvents) && leaveEvents.length === 3) {
       console.log('Guest left block');
-      const [guestEvent, hostEvent] = leaveEvents;
+      const [guestEvent, hostEvent, hubEvent] = leaveEvents;
       console.log(guestEvent); console.log(hostEvent);
       // Emit respective events
       client.emit(guestEvent.command, guestEvent);
       client.broadcast.to(gameId).emit(hostEvent.command, hostEvent);
-      // PLACEHOLDER FOR THE HUB UPDATE EVENT!
+      // Refresh the lobby list for the players in the hub
+      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle host leave
-    else if (leaveEvents.type === MessageType.LobbyEvent) {
+    else if (Array.isArray(leaveEvents) && leaveEvents.length === 2) {
+      const [roomEvent, hubEvent] = leaveEvents;
       // Emit leave event to both
-      this.server.to(gameId).emit(leaveEvents.command, leaveEvents);
+      this.server.to(gameId).emit(roomEvent.command, roomEvent);
+      // Emit hub event in case lobby was open
+      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle error event
     else {
@@ -106,12 +110,13 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     // Handle normal behaviour
     if (Array.isArray(kickEvents)) {
       console.log('Guest left block');
-      const [guestEvent, hostEvent] = kickEvents;
+      const [guestEvent, hostEvent, hubEvent] = kickEvents;
       console.log(guestEvent); console.log(hostEvent);
       // Emit respective events (This time in reverse because client is host)
       client.broadcast.to(gameId).emit(guestEvent.command, guestEvent);
       client.emit(hostEvent.command, hostEvent);
-      // PLACEHOLDER FOR THE HUB UPDATE EVENT!
+      // Refresh the lobby list for the players in the hub
+      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle error event
     else {
