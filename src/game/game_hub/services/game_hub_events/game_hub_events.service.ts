@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { createErrorEvent, createHubGamesUpdatedEvent, createHubQuitEvent, createHubToLobbyEvent } from '@user530/ws_game_shared/creators/events';
-import { ErrorEvent, HubEventGameData, HubEventLobbyData, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub } from '@user530/ws_game_shared/interfaces/ws-events';
+import { createErrorEvent, createHubGamesUpdatedEvent, createHubQuitEvent, createHubToGameEvent, createHubToLobbyEvent } from '@user530/ws_game_shared/creators/events';
+import { ErrorEvent, HubEventLobbyData, HubEventToLobbyData, HubEventMovedToLobby, HubEventGamesUpdated, HubEventQuitHub, HubEventToGameData, HubEventMovedToGame } from '@user530/ws_game_shared/interfaces/ws-events';
 
 interface IGameHubEventsService {
     prepareErrorEvent(errorData: Pick<ErrorEvent, 'code' | 'message'>): ErrorEvent;
-    prepareGamesUpdatedEvent(gameData: HubEventGameData[]): HubEventGamesUpdated;
-    prepareMovedToLobbyEvent(lobbyData: HubEventLobbyData): HubEventMovedToLobby;
+    prepareGamesUpdatedEvent(gameData: HubEventLobbyData[]): HubEventGamesUpdated;
+    prepareMovedToLobbyEvent(lobbyData: HubEventToLobbyData): HubEventMovedToLobby;
+    prepareMovedToGameEvent(gameData: HubEventToGameData): HubEventMovedToGame;
     prepareQuitHubEvent(): HubEventQuitHub;
 }
 
@@ -16,12 +17,16 @@ export class GameHubEventsService implements IGameHubEventsService {
         return createErrorEvent(errorData);
     }
 
-    prepareGamesUpdatedEvent(hubGames: HubEventGameData[]): HubEventGamesUpdated {
+    prepareGamesUpdatedEvent(hubGames: HubEventLobbyData[]): HubEventGamesUpdated {
         return createHubGamesUpdatedEvent(hubGames);
     }
 
-    prepareMovedToLobbyEvent(lobbyData: HubEventLobbyData): HubEventMovedToLobby {
+    prepareMovedToLobbyEvent(lobbyData: HubEventToLobbyData): HubEventMovedToLobby {
         return createHubToLobbyEvent(lobbyData);
+    }
+
+    prepareMovedToGameEvent(gameData: HubEventToGameData): HubEventMovedToGame {
+        return createHubToGameEvent(gameData);
     }
 
     prepareQuitHubEvent(): HubEventQuitHub {

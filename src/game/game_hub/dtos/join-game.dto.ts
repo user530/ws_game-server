@@ -12,7 +12,7 @@ class JoinGameDataType implements HubCommandJoinData {
     @IsNotEmpty()
     @IsString()
     @IsUUID()
-    lobbyId: string;
+    gameId: string;
 }
 
 export class JoinGameDTO implements HubCommandJoinGame {
