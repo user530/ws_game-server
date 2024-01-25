@@ -1,15 +1,16 @@
 import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, ErrorEvent } from '@user530/ws_game_shared/interfaces/ws-events';
+import { LobbyEventGuestJoined, LobbyEventGuestLeft, LobbyEventMovedToGame, LobbyEventMovedToHub, ErrorEvent, HubEventGamesUpdated } from '@user530/ws_game_shared/interfaces/ws-events';
 import { GameLobbyEventsService } from '../game_lobby_events/game_lobby_events.service';
 import { LobbyLogicService } from '../lobby_logic/lobby_logic.service';
 import { KickGuestDataType, LeaveLobbyDataType, LobbyAuthDTO, StartGameDataType } from '../../dtos';
-import { createLobbyGuestJoinedEvent, createLobbyGuestLeftEvent, createLobbyToGameEvent, createLobbyToHubEvent } from '@user530/ws_game_shared/creators/events';
+import { createHubGamesUpdatedEvent, createLobbyGuestJoinedEvent, createLobbyGuestLeftEvent, createLobbyToGameEvent, createLobbyToHubEvent } from '@user530/ws_game_shared/creators/events';
 import { GameStatus } from '@user530/ws_game_shared/enums';
+import { HubLogicService } from 'src/game/game_hub/services/hub_logic/hub_logic.service';
 
 interface IGameLobbyService {
     handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventMovedToGame | LobbyEventGuestJoined | [ErrorEvent, LobbyEventMovedToHub]>;
-    handleLeaveLobbyMessage(leaveData: LeaveLobbyDataType): Promise<LobbyEventMovedToHub | [LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent>;
-    handleKickGuestMessage(kickData: KickGuestDataType): Promise<[LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent>;
+    handleLeaveLobbyMessage(leaveData: LeaveLobbyDataType): Promise<[LobbyEventMovedToHub, HubEventGamesUpdated] | [LobbyEventMovedToHub, LobbyEventGuestLeft, HubEventGamesUpdated] | ErrorEvent>;
+    handleKickGuestMessage(kickData: KickGuestDataType): Promise<[LobbyEventMovedToHub, LobbyEventGuestLeft, HubEventGamesUpdated] | ErrorEvent>;
     handleStartGameMessage(startData: StartGameDataType): Promise<LobbyEventMovedToGame | ErrorEvent>;
 }
 
@@ -19,6 +20,7 @@ export class GameLobbyService implements IGameLobbyService {
     constructor(
         private readonly eventCreatorService: GameLobbyEventsService,
         private readonly lobbyLogicService: LobbyLogicService,
+        private readonly hubLogicService: HubLogicService,
     ) { }
 
     async handleConnection(authData: LobbyAuthDTO): Promise<null | LobbyEventMovedToGame | LobbyEventGuestJoined | [ErrorEvent, LobbyEventMovedToHub]> {
@@ -57,7 +59,7 @@ export class GameLobbyService implements IGameLobbyService {
         }
     }
 
-    async handleLeaveLobbyMessage(leaveData: LeaveLobbyDataType): Promise<LobbyEventMovedToHub | [LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent> {
+    async handleLeaveLobbyMessage(leaveData: LeaveLobbyDataType): Promise<[LobbyEventMovedToHub, HubEventGamesUpdated] | [LobbyEventMovedToHub, LobbyEventGuestLeft, HubEventGamesUpdated] | ErrorEvent> {
         try {
             console.log('Game Lobby Service - Handle Leave Lobby Message Fired');
             const { gameId, playerId } = leaveData;
@@ -67,15 +69,22 @@ export class GameLobbyService implements IGameLobbyService {
             // If user is host -> Abort the game, emit to both: Move to Hub event
             if (isHost) {
                 await this.lobbyLogicService.handleHostLeave(gameId);
-                return createLobbyToHubEvent();
+                // Prepare update event for the users in the hub, signalling that game is not available any more
+                const lobbiesData = await this.hubLogicService.getOpenLobbies();
+                return [
+                    createLobbyToHubEvent(),
+                    createHubGamesUpdatedEvent(lobbiesData),
+                ];
             }
             // If user is guest -> Update the game (guest is null), Update New Lobby Status to host, Emit to guest Move to Hub, Emit updated game list to Hub(!) 
             else {
                 await this.lobbyLogicService.handleGuestLeave(gameId);
-                // NEED SOME WAY TO EMIT UPDATED GAME LIST IN THE HUB! (Maybe add some update msg listener to the hub and emit from the lobby gateway to the hub one)
+                // Prepare update event for the users in the hub, signalling that game is open again
+                const lobbiesData = await this.hubLogicService.getOpenLobbies();
                 return [
                     createLobbyToHubEvent(),
                     createLobbyGuestLeftEvent(),
+                    createHubGamesUpdatedEvent(lobbiesData),
                 ]
             }
         } catch (error) {
@@ -92,7 +101,7 @@ export class GameLobbyService implements IGameLobbyService {
         }
     }
 
-    async handleKickGuestMessage(kickData: KickGuestDataType): Promise<[LobbyEventMovedToHub, LobbyEventGuestLeft] | ErrorEvent> {
+    async handleKickGuestMessage(kickData: KickGuestDataType): Promise<[LobbyEventMovedToHub, LobbyEventGuestLeft, HubEventGamesUpdated] | ErrorEvent> {
         try {
             console.log('Game Lobby Service - Handle Kick Guest Message Fired');
             const { gameId, playerId } = kickData;
@@ -105,10 +114,12 @@ export class GameLobbyService implements IGameLobbyService {
 
             // If user is host -> Handle kick (guest leave)
             await this.lobbyLogicService.handleGuestLeave(gameId);
-            // NEED SOME WAY TO EMIT UPDATED GAME LIST IN THE HUB! (Maybe add some update msg listener to the hub and emit from the lobby gateway to the hub one)
+            // Prepare update event for the users in the hub, signalling that game is open again
+            const lobbiesData = await this.hubLogicService.getOpenLobbies();
             return [
                 createLobbyToHubEvent(),
-                createLobbyGuestLeftEvent()
+                createLobbyGuestLeftEvent(),
+                createHubGamesUpdatedEvent(lobbiesData),
             ];
         } catch (error) {
             // Default err object
@@ -137,7 +148,7 @@ export class GameLobbyService implements IGameLobbyService {
 
             // If user is host -> Start game
             const startedGame = await this.lobbyLogicService.startGame(gameId);
-            
+
             return createLobbyToGameEvent(startedGame);
         } catch (error) {
             // Default err object
