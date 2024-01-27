@@ -1,5 +1,5 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
-import { Socket, Server } from 'socket.io';
+import { Socket, Namespace } from 'socket.io';
 import { GameInstanceService } from '../services/game_instance/game_instance.service';
 import { MakeTurnDTO, ForfeitMatchDTO } from '../dtos';
 import { ExecutionContext, UsePipes, ValidationPipe } from '@nestjs/common';
@@ -14,7 +14,7 @@ import { GameInstanceGuard } from '../guards/game_instance/game_instance.guard';
 @UsePipes(new ValidationPipe())
 export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDisconnect, GameInstanceMessagesHandler {
   @WebSocketServer()
-  private server: Server;
+  private SocketNamespace: Namespace;
 
   constructor(
     private readonly gameInstanceService: GameInstanceService,
@@ -62,11 +62,11 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
     // Turn that ended the game
     if (Array.isArray(turnResultEvents))
-      turnResultEvents.forEach(event => this.server.to(gameId).emit(event.command, event));
+      turnResultEvents.forEach(event => this.SocketNamespace.to(gameId).emit(event.command, event));
 
     // Regular turn
     else if (turnResultEvents.type === 'game_event')
-      this.server.to(gameId).emit(turnResultEvents.command, turnResultEvents);
+      this.SocketNamespace.to(gameId).emit(turnResultEvents.command, turnResultEvents);
 
     // Error -> Emit to sender
     else
@@ -81,7 +81,7 @@ export class GameInstanceGateway implements OnGatewayConnection, OnGatewayDiscon
 
     // Forfeit event
     if (forfeitEvent.type === 'game_event')
-      this.server.to(gameId).emit(forfeitEvent.command, forfeitEvent);
+      this.SocketNamespace.to(gameId).emit(forfeitEvent.command, forfeitEvent);
 
     // Error -> Emit to sender
     else

@@ -1,7 +1,7 @@
-import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, MessageBody } from '@nestjs/websockets';
+import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, MessageBody, WebSocketServer } from '@nestjs/websockets';
 import { GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { HubCommand, MessageType } from '@user530/ws_game_shared/types';
-import { Socket } from 'socket.io';
+import { Socket, Namespace } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
@@ -12,6 +12,9 @@ import { UsePipes, ValidationPipe } from '@nestjs/common';
 })
 @UsePipes(new ValidationPipe())
 export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandler {
+  @WebSocketServer()
+  private readonly SocketNamespace: Namespace;
+
   constructor(
     private readonly gameHubService: GameHubService
   ) { }
@@ -20,6 +23,11 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
     const { userId } = client.handshake.auth;
     console.log('HUB HANDLE CONNECTION. USER ID: ', userId)
     const gamesUpdatedEvent = await this.gameHubService.handleConnection({ userId });
+    console.log('ALL SOCKETS:')
+    console.log(this.SocketNamespace.server)
+    for (const [id, singleSocket] of this.SocketNamespace.sockets.entries()) {
+      console.log(`${id} - ${singleSocket.handshake.auth['userId']}`)
+    }
 
     // Emit hub event to the user
     if (gamesUpdatedEvent.type === MessageType.HubEvent) {

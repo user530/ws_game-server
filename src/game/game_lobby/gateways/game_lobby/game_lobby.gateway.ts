@@ -2,7 +2,7 @@ import { SubscribeMessage, WebSocketGateway, OnGatewayConnection, OnGatewayDisco
 import { GameLobbyMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
 import { LobbyCommand, LobbyEvent, MessageType } from '@user530/ws_game_shared/types';
 import { GameLobbyService } from '../../services/game_lobby/game_lobby.service';
-import { Socket, Server } from 'socket.io';
+import { Socket, Namespace } from 'socket.io';
 import { KickGuestDTO, LeaveLobbyDTO, StartGameDTO } from '../../dtos';
 
 @WebSocketGateway({
@@ -11,7 +11,7 @@ import { KickGuestDTO, LeaveLobbyDTO, StartGameDTO } from '../../dtos';
 })
 export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  private server: any;
+  private SocketNamespace: Namespace;
 
   constructor(
     private readonly gameLobbyService: GameLobbyService
@@ -21,6 +21,8 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
     console.log('LOBBY GATEWAY - CONNECTION ESTABLISHED');
     console.log(client.handshake.auth);
     const { gameId, userId } = client.handshake.auth;
+    console.log('SOCKET NAMESPACE:');
+    console.log(this.SocketNamespace.server)
     // Update Lobby Status event to client, if guest joined also send Update Lobby Status to the host;
     const connectionEvent = await this.gameLobbyService.handleConnection({ gameId, userId });
     console.log('CONNECTION EVENT: ');
@@ -79,15 +81,15 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
       client.emit(guestEvent.command, guestEvent);
       client.broadcast.to(gameId).emit(hostEvent.command, hostEvent);
       // Refresh the lobby list for the players in the hub
-      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
+      this.SocketNamespace.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle host leave
     else if (Array.isArray(leaveEvents) && leaveEvents.length === 2) {
       const [roomEvent, hubEvent] = leaveEvents;
       // Emit leave event to both
-      this.server.to(gameId).emit(roomEvent.command, roomEvent);
+      this.SocketNamespace.to(gameId).emit(roomEvent.command, roomEvent);
       // Emit hub event in case lobby was open
-      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
+      this.SocketNamespace.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle error event
     else {
@@ -116,7 +118,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
       client.broadcast.to(gameId).emit(guestEvent.command, guestEvent);
       client.emit(hostEvent.command, hostEvent);
       // Refresh the lobby list for the players in the hub
-      this.server.server.of('/hub').emit(hubEvent.command, hubEvent);
+      this.SocketNamespace.server.of('/hub').emit(hubEvent.command, hubEvent);
     }
     // Handle error event
     else {
@@ -138,7 +140,7 @@ export class GameLobbyGateway implements GameLobbyMessagesHandler, OnGatewayConn
 
     // Handle normal behaviour
     if (startEvent.type === MessageType.LobbyEvent) {
-      this.server.to(gameId).emit(startEvent.command, startEvent);
+      this.SocketNamespace.to(gameId).emit(startEvent.command, startEvent);
     }
     // Handle error event
     else {
