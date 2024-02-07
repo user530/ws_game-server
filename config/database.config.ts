@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Game, GameTurn, Player } from 'src/database/entities';
-import { CreateGameTable, CreateGameTurnTable, CreatePlayerTable } from 'src/migrations';
+import { DirectMessage, Game, GameTurn, GeneralMessage, Player } from 'src/database/entities';
+import { CreateDirectMsgTable, CreateGameTable, CreateGameTurnTable, CreateGeneralMsgTable, CreatePlayerTable } from 'src/migrations';
 import { DataSourceOptions } from 'typeorm';
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
@@ -21,11 +21,15 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
             Player,
             Game,
             GameTurn,
+            GeneralMessage,
+            DirectMessage,
         ],
         migrations: [
             CreatePlayerTable,
             CreateGameTable,
             CreateGameTurnTable,
+            CreateGeneralMsgTable,
+            CreateDirectMsgTable,
         ],
         migrationsRun: true,
     };
