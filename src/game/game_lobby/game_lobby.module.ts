@@ -6,6 +6,7 @@ import { LobbyLogicService } from './services/lobby_logic/lobby_logic.service';
 import { GameService, PlayerService } from 'src/database/services';
 import { DatabaseModule } from 'src/database/database.module';
 import { HubLogicService } from '../game_hub/services/hub_logic/hub_logic.service';
+import { MessageService } from 'src/database/services/message/message.service';
 
 
 @Module({
@@ -18,6 +19,7 @@ import { HubLogicService } from '../game_hub/services/hub_logic/hub_logic.servic
         HubLogicService,
         GameService,
         PlayerService,
+        MessageService,
     ],
 })
 export class GameLobbyModule { }
