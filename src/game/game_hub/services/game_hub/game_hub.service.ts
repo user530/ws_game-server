@@ -19,6 +19,10 @@ export class GameHubService implements IGameHubService {
         private readonly eventCreatorService: GameHubEventsService
     ) { }
 
+    async test(playerId: string) {
+        return await this.hubLogicService.getMessages(playerId);
+    }
+
     async handleConnection(hubAuthDTO: HubAuthDTO): Promise<ErrorEvent | HubEventMovedToLobby | HubEventMovedToGame | HubEventGamesUpdated> {
         try {
             // Validate user credentials
