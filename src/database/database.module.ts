@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayerService } from './services/player/player.service';
 import { GameTurnService } from './services/game-turn/game-turn.service';
-import { Game, GameTurn, Player } from './entities';
+import { DirectMessage, Game, GameTurn, GeneralMessage, Player } from './entities';
 import { GameService } from './services/game/game.service';
+import { MessageService } from './services/message/message.service';
 
 @Module({
   imports: [
@@ -12,6 +13,8 @@ import { GameService } from './services/game/game.service';
         Player,
         Game,
         GameTurn,
+        GeneralMessage,
+        DirectMessage,
       ]
     )
   ],
@@ -19,6 +22,7 @@ import { GameService } from './services/game/game.service';
     PlayerService,
     GameTurnService,
     GameService,
+    MessageService,
   ],
   exports: [
     TypeOrmModule,
