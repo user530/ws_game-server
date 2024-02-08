@@ -3,7 +3,7 @@ import { GameStatus } from '@user530/ws_game_shared/enums';
 import { HubEventLobbyData, HubEventToGameData, HubEventToLobbyData } from '@user530/ws_game_shared/interfaces/ws-events';
 import { HubCommandHostData, HubCommandJoinData } from '@user530/ws_game_shared/interfaces/ws-messages';
 import { Game } from 'src/database/entities';
-import { GameService, PlayerService, MessageService } from 'src/database/services';
+import { GameService, PlayerService } from 'src/database/services';
 import { HubAuthDTO } from '../../dtos';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
@@ -27,18 +27,7 @@ export class HubLogicService implements IHubLogicService {
     constructor(
         private readonly gameService: GameService,
         private readonly playerService: PlayerService,
-        private readonly messageService: MessageService,
     ) { }
-
-    async getMessages(userId: string) {
-        const msgs = await this.messageService.getDMsByUser(userId);
-        return msgs;
-    }
-
-    async addMessage(playerId: string, message: string, layer: ChatLayer, channel?: string) {
-        const newMsg = await this.messageService.addGeneralMessage(playerId, message, layer, channel);
-        return newMsg;
-    }
 
     async getPlayerActiveData(hubAuthDTO: HubAuthDTO): Promise<HubEventToLobbyData | HubEventToGameData | null> {
         console.log('HUB LOGIC - GET PLAYER ACTIVE DATA FIRED');
