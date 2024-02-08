@@ -26,7 +26,10 @@ import { MessageService } from './services/message/message.service';
   ],
   exports: [
     TypeOrmModule,
-    PlayerService
+    PlayerService,
+    GameTurnService,
+    GameService,
+    MessageService,
   ],
 })
 export class DatabaseModule { }
