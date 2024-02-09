@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateDirectMessageDTO, CreateGeneralMessage, RequestDmDTO, RequestHubMessageDTO, RequestRoomMessageDTO } from 'src/database/dtos/message';
+import { CreateDirectMessageDTO, CreateGeneralMessageDTO, RequestDmDTO, RequestHubMessageDTO, RequestRoomMessageDTO } from 'src/database/dtos/message';
 import { DirectMessage, GeneralMessage, Player } from 'src/database/entities';
 import { ChatLayer } from 'src/database/entities/message.entity';
 import { MoreThanOrEqual, Repository } from 'typeorm';
@@ -8,7 +8,7 @@ import { MoreThanOrEqual, Repository } from 'typeorm';
 interface IMessageService {
     getLayerMessages(requestMessageDTO: RequestHubMessageDTO | RequestRoomMessageDTO): Promise<GeneralMessage[]>
     getDMsByUser(requestDmDTO: RequestDmDTO): Promise<DirectMessage[]>;
-    createGeneralMessage(createGeneralMessageDTO: CreateGeneralMessage): Promise<GeneralMessage>;
+    createGeneralMessage(createGeneralMessageDTO: CreateGeneralMessageDTO): Promise<GeneralMessage>;
     createDirectMessage(createDirectMessageDTO: CreateDirectMessageDTO): Promise<DirectMessage>;
 }
 
@@ -39,10 +39,10 @@ export class MessageService implements IMessageService {
                 {
                     layer,
                     room_id: layer === ChatLayer.Hub ? null : requestMessageDTO.roomId,
-                    // timestamp: MoreThanOrEqual(timestampLimit),
+                    timestamp: MoreThanOrEqual(timestampLimit),
                 },
                 take: this.MESSAGE_LIMIT,
-                order: { timestamp: 'DESC' },
+                order: { timestamp: 'ASC' },
             });
 
         console.log('MESSAGES:');
@@ -75,7 +75,7 @@ export class MessageService implements IMessageService {
         return userDMs;
     }
 
-    async createGeneralMessage(createGeneralMessageDTO: CreateGeneralMessage): Promise<GeneralMessage> {
+    async createGeneralMessage(createGeneralMessageDTO: CreateGeneralMessageDTO): Promise<GeneralMessage> {
         console.log('MESSAGE SERVICE - ADD GENERAL MESSAGE FIRED!');
         const { authorId, message, layer, roomId } = createGeneralMessageDTO;
         const author = await this.playerRepository.findOneBy({ id: authorId });
