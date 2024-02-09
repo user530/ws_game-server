@@ -1,7 +1,7 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, Length } from 'class-validator';
 import { ChatLayer } from 'src/database/entities/message.entity';
 
-export class CreateGeneralMessage {
+export class CreateGeneralMessageDTO {
     @IsNotEmpty()
     @IsUUID()
     authorId: string;
