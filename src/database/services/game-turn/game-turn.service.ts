@@ -22,8 +22,6 @@ export class GameTurnService implements IGameTurnControls {
     ) { }
 
     async getGameTurns(requestGameTurnDTO: RequestGameTurnDTO): Promise<GameTurn[]> {
-        console.log('GameTurnService - GetGameTurns');
-
         return this.gameturnRepository.find({
             where:
             {
@@ -33,8 +31,6 @@ export class GameTurnService implements IGameTurnControls {
     }
 
     async addGameTurn(createGameTurnDTO: CreateGameTurnDTO): Promise<GameTurn> {
-        console.log('GameTurnService - AddGameTurn');
-
         const { gameId, playerId, row, column } = createGameTurnDTO;
 
         const game = await this.gameRepository.findOne({ where: { id: gameId }, relations: ['turns'] });

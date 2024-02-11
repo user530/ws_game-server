@@ -14,7 +14,7 @@ export class GameInstanceGuard implements CanActivate {
     context: ExecutionContext,
   ): Promise<boolean> {
     try {
-      console.log('Game Instance guard fired!');
+      // console.log('Game Instance guard fired!');
 
       const client = context.switchToWs().getClient<Socket>();
 
@@ -23,35 +23,35 @@ export class GameInstanceGuard implements CanActivate {
       if (!userId || !gameId)
         return false;
 
-      console.log('Found Auth credentials');
+      // console.log('Found Auth credentials');
 
       const isValidUser = await this.isValidUser(userId, gameId);
 
-      console.log('User is valid - ', isValidUser);
+      // console.log('User is valid - ', isValidUser);
 
       return isValidUser;
     } catch (error) {
-      console.log('Game Instance Guard - Error!');
+      // console.log('Game Instance Guard - Error!');
       return false
     }
   }
 
   async isValidUser(userId: string, gameId: string): Promise<boolean> {
-    console.log('Is valid user fired');
-    console.log(userId, gameId)
+    // console.log('Is valid user fired');
+    // console.log(userId, gameId)
 
     const game = await this.gameService.getGameById({ gameId });
 
     if (!game)
       return false;
-    console.log('is valid user, game found')
+    // console.log('is valid user, game found')
 
     if (game.status !== GameStatus.InProgress)
       return false;
-    console.log('is valid user, game status is ok')
+    // console.log('is valid user, game status is ok')
     if (userId !== game.host.id && userId !== game.guest.id)
       return false;
-    console.log('user is valid')
+    // console.log('user is valid')
     return true;
   }
 }
