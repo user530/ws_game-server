@@ -1,12 +1,15 @@
 import { SubscribeMessage, ConnectedSocket, WebSocketGateway, OnGatewayConnection, MessageBody, WebSocketServer } from '@nestjs/websockets';
 import { ChatMessagesHandler, GameHubMessagesHandler } from '@user530/ws_game_shared/interfaces/ws-listeners';
-import { ChatCommand, HubCommand, MessageType } from '@user530/ws_game_shared/types';
+import { ChatCommand, HubCommand, HubEvent, MessageType } from '@user530/ws_game_shared/types';
 import { Socket, Namespace } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
-import { ChatCommandSendMessage } from '@user530/ws_game_shared/interfaces/ws-messages';
-import { createChatNewMsgEvent } from '@user530/ws_game_shared/creators/events';
+import { GameChatService } from 'src/game/game_chat/services/game_chat/game_chat.service';
+import { ChatLayer } from 'src/database/entities/message.entity';
+import { TargetedEvent } from 'src/game/game_chat/interfaces';
+import { ChatEventNewMessage } from '@user530/ws_game_shared/interfaces/ws-events';
+import { SendMessageDTO } from 'src/game/game_chat/dtos/send-message.dto';
 
 @WebSocketGateway({
   cors: '*',
@@ -18,31 +21,50 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
   private readonly SocketNamespace: Namespace;
 
   constructor(
-    private readonly gameHubService: GameHubService
+    private readonly gameHubService: GameHubService,
+    private readonly gameChatService: GameChatService,
   ) { }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
+    // Skip connection logic on reconnect
+    if (client.recovered)
+      return;
+
+    // Initial connection logic
     const { userId } = client.handshake.auth;
-    console.log('HUB HANDLE CONNECTION. USER ID: ', userId)
+
+    // Register socket by userId
+    client.join(userId);
+
+    // Decide on the required event
     const gamesUpdatedEvent = await this.gameHubService.handleConnection({ userId });
-    // console.log('ALL SOCKETS:')
-    // console.log(this.SocketNamespace.server)
-    // for (const [id, singleSocket] of this.SocketNamespace.sockets.entries()) {
-    //   console.log(`${id} - ${singleSocket.handshake.auth['userId']}`)
-    // }
-    const messages: any = await this.gameHubService.test(userId);
-    console.log('MESSAGES!');
-    console.log(messages);
 
-    // Emit hub event to the user
-    if (gamesUpdatedEvent.type === MessageType.HubEvent) {
-      client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+    // Error event is emmited back to the client
+    if (gamesUpdatedEvent.type === MessageType.ErrorMessage)
+      return client.emit(gamesUpdatedEvent.type, gamesUpdatedEvent);
+
+    // Emit layer change 
+    if (
+      gamesUpdatedEvent.command === HubEvent.MovedToGame
+      || gamesUpdatedEvent.command === HubEvent.MovedToLobby
+    )
+      return client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+
+    // User stays in the Hub layer, update the list of the games
+    client.emit(gamesUpdatedEvent.command, gamesUpdatedEvent);
+
+    // Load messages on hub connection
+    const hubMessages = await this.gameChatService.handleHubConnection({ userId });
+
+    // If it is not and array of messages -> it is a targeted error chat event
+    if (!Array.isArray(hubMessages)) {
+      const { event } = hubMessages;
+      return client.emit(event.command, event);
     }
-    // Error -> Emit to sender
+    // If no error -> emit all messages back to the client
     else {
-      client.emit(gamesUpdatedEvent.type, gamesUpdatedEvent);
+      return hubMessages.forEach(msg => client.emit(msg.command, msg));
     }
-
   }
 
   @SubscribeMessage(HubCommand.HostGame)
@@ -86,32 +108,33 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
     const leftHubEvent = await this.gameHubService.handleLeaveHubMessage();
     client.emit(leftHubEvent.command);
   }
-  // DONT FORGET TO CHANGE BODY TO DTO          !!!
+
   @SubscribeMessage(ChatCommand.SendMessage)
-  async wsChatSendMsgListener(@ConnectedSocket() socket: Socket, @MessageBody() sendMsgMessage: ChatCommandSendMessage): Promise<void> {
-    console.log('HUB SOCKET - SEND CHAT MSG RECIEVED');
-    const { data: { message, user } } = sendMsgMessage;
-    console.log(`User ${user} sent: ${message}`);
+  async wsChatSendMsgListener(@ConnectedSocket() client: Socket, @MessageBody() sendMsgMessage: SendMessageDTO): Promise<void> {
+    const { data } = sendMsgMessage;
+    // Prepare layer context
+    const contextData = { layer: ChatLayer.Hub, roomId: null };
+    // Handle message with regards to the layer context
+    const msgEvent = await this.gameChatService.handleSendMsgMessage({ contextData, msgData: data });
 
-    // PLACEHOLDER
-    // 1 Check that user name is same as his Auth credential
-    // 2 Save timestamp
-    // 3 Check if it is whisper
-    // 4 Create Event and emit
+    // If message is a direct message
+    if ((msgEvent as TargetedEvent).targets) {
+      const { event, targets } = msgEvent as TargetedEvent;
 
-    console.log(socket.handshake.auth.userId);
+      //  Emit dm event to targets on all layers
+      this.SocketNamespace.server.of(ChatLayer.Hub).to(targets).emit(event.command, event)
+      this.SocketNamespace.server.of(ChatLayer.Lobby).to(targets).emit(event.command, event)
+      this.SocketNamespace.server.of(ChatLayer.Game).to(targets).emit(event.command, event)
+    }
+    // If message is the layer message
+    else {
+      const generalEvent = msgEvent as ChatEventNewMessage;
 
-    // const time = new Date();
-    // const messageEvent = createChatNewMsgEvent(
-    //   {
-    //     timestamp: [
-    //       time.getHours(),
-    //       time.getMinutes()
-    //     ],
-    //     user,
-    //     message,
-    //     isWhisper: Math.round(Math.random()) === 1
-    //   })
-    // this.SocketNamespace.emit(messageEvent.command, messageEvent);
+      // Emit general message to all players in Hub layer
+      this.SocketNamespace.server.of(ChatLayer.Hub).emit(
+        generalEvent.command,
+        generalEvent,
+      )
+    }
   }
 }
