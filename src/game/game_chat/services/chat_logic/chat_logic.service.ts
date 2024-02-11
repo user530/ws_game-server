@@ -20,7 +20,7 @@ export class ChatLogicService {
     }
 
     async getGameMessages(roomId: string): Promise<GeneralMessage[]> {
-        return await this.messageService.getLayerMessages({ layer: ChatLayer.Lobby, roomId });
+        return await this.messageService.getLayerMessages({ layer: ChatLayer.Game, roomId });
     }
 
     async getDirectMessages(userId: string): Promise<DirectMessage[]> {
@@ -53,7 +53,6 @@ export class ChatLogicService {
     }
 
     errTxtToEventData(errText: string): ChatEventNewMsgData {
-
         const eventData: ChatEventNewMsgData = {
             user: 'SERVER',
             message: errText,
@@ -66,6 +65,7 @@ export class ChatLogicService {
 
     generalMsgToEventData(generalMsg: GeneralMessage): ChatEventNewMsgData {
         const { author: { name }, message, timestamp } = generalMsg;
+
         return {
             user: name,
             message,
@@ -76,6 +76,7 @@ export class ChatLogicService {
 
     directMsgToEventData(directMsg: DirectMessage): ChatEventNewMsgData {
         const { author: { name }, message, timestamp } = directMsg;
+
         return {
             user: name,
             message,
