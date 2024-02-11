@@ -8,11 +8,6 @@ import { HubAuthDTO } from '../../dtos';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 
-
-
-// DELETE
-import { ChatLayer } from 'src/database/entities/message.entity';
-
 interface IHubLogicService {
     isValidHubConnection(hubAuthDTO: HubAuthDTO): Promise<boolean>;
     getPlayerActiveData(hubAuthDTO: HubAuthDTO): Promise<HubEventToLobbyData | HubEventToGameData | undefined>
@@ -20,7 +15,6 @@ interface IHubLogicService {
     getHostedLobby(hostData: HubCommandHostData): Promise<HubEventLobbyData>;
     getJoinedLobby(joinData: HubCommandJoinData): Promise<HubEventToLobbyData>;
 }
-
 
 @Injectable()
 export class HubLogicService implements IHubLogicService {
@@ -30,7 +24,6 @@ export class HubLogicService implements IHubLogicService {
     ) { }
 
     async getPlayerActiveData(hubAuthDTO: HubAuthDTO): Promise<HubEventToLobbyData | HubEventToGameData | null> {
-        console.log('HUB LOGIC - GET PLAYER ACTIVE DATA FIRED');
         const { userId } = hubAuthDTO;
         const game = await this.getPlayerActiveGame(userId);
 
@@ -75,40 +68,36 @@ export class HubLogicService implements IHubLogicService {
     }
 
     private async getPlayerActiveGame(userId: string): Promise<Game | undefined> {
-        console.log('HUB LOGIC - GET PLAYER ACTIVE DATA FIRED');
         const playerGames = await this.getAllGames(userId);
-        console.log('All player games fetched');
-        console.log(playerGames);
+
         const activeGame = playerGames
             .find(
                 game => game.status === GameStatus.Pending
                     || game.status === GameStatus.InProgress
             );
-        console.log('Active game: '); console.log(activeGame);
 
         return activeGame;
     }
 
     async isValidHubConnection(hubAuthDTO: HubAuthDTO): Promise<boolean> {
-        console.log('HUB LOGIC - IS VALID HUB CONNECTION FIRED');
         const authDTO = plainToClass(HubAuthDTO, hubAuthDTO);
         const errors = await validate(authDTO);
+
         if (errors.length > 0)
             throw new UnauthorizedException('Invalid player credentials!');
-        console.log('isValidHubConnection - DTO validated');
+
         const player = await this.playerService.getPlayerById({ id: hubAuthDTO.userId });
 
         if (!player)
             throw new UnauthorizedException('Unauthorized player!');
-        console.log('isValidHubConnection - Player exists');
+
         return true;
     }
 
     async getJoinedLobby(joinData: HubCommandJoinData): Promise<HubEventToLobbyData> {
         const { playerId: guestId, gameId } = joinData;
         const openGame = await this.gameService.joinGame({ guestId, gameId });
-        console.log('HUB LOGIC - GET JOINED LOBBY. GAME:');
-        console.log(openGame);
+
         const lobbyData = this.gameToLobbyGuestData(openGame);
 
         return lobbyData;
@@ -117,8 +106,7 @@ export class HubLogicService implements IHubLogicService {
     async getHostedLobby(hostData: HubCommandHostData): Promise<HubEventLobbyData> {
         const { playerId: hostId } = hostData;
         const newGame = await this.gameService.hostGame({ hostId });
-        console.log('HUB LOGIC - GET HOSTED LOBBY. GAME:');
-        console.log(newGame);
+
         const gameData = this.gameToLobbyHostData(newGame);
 
         return gameData;
@@ -133,16 +121,17 @@ export class HubLogicService implements IHubLogicService {
 
     private async getHostedGames(): Promise<Game[]> {
         const games = await this.gameService.getHostedGames();
+
         return games;
     }
 
     private async getAllGames(playerId: string): Promise<Game[]> {
         const games = await this.gameService.getAllPlayerGames({ playerId });
+
         return games;
     }
 
     private gameToLobbyHostData(game: Game): HubEventLobbyData {
-
         const { id: gameId, host: { id: hostId, name: hostName }, guest, status } = game;
 
         if (guest)

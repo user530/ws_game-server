@@ -36,15 +36,10 @@ export class GameHubService implements IGameHubService {
             }
 
             // If player is the part of some lobby
-            if (inProgressData.status === GameStatus.Pending) {
-                console.log('PLAYER HAS OPEN LOBBY!');
-                console.log(inProgressData);
+            if (inProgressData.status === GameStatus.Pending)
                 return this.eventCreatorService.prepareMovedToLobbyEvent(inProgressData);
-            }
 
             // Player is the part of some active game
-            console.log('PLAYER HAS ACTIVE GAME!');
-            console.log(inProgressData);
             return this.eventCreatorService.prepareMovedToGameEvent(inProgressData);
         } catch (error) {
             // Default err object
