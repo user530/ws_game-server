@@ -28,8 +28,6 @@ export class GameChatService implements IGameChatService {
     async handleHubConnection(connectionData: { userId: string })
         : Promise<ChatEventNewMessage[] | TargetedEvent> {
         try {
-            console.log('GAME CHAT SERVICE - HANDLE HUB CONNECTION FIRED!');
-
             const hubMessages = await this.chatLogicService.getHubMessages();
             const directMessages = await this.chatLogicService.getDirectMessages(connectionData.userId);
 
@@ -52,9 +50,6 @@ export class GameChatService implements IGameChatService {
             return allMessagesEvents;
 
         } catch (error) {
-            console.log('CHAT SERVICE - HANDLE HUB ERROR!');
-            console.log(error);
-
             const errText = error.message || 'SOMETHING WENT WRONG. PLEASE TRY AGAIN LATER!';
             const eventData: ChatEventNewMsgData = this.chatLogicService.errTxtToEventData(errText);
             const targetedEvent: TargetedEvent = {
@@ -68,7 +63,6 @@ export class GameChatService implements IGameChatService {
 
     async handleLobbyConnection(connectionData: { userId: string, lobbyRoomId: string })
         : Promise<ChatEventNewMessage[] | TargetedEvent> {
-        console.log('GAME CHAT SERVICE - HANDLE LOBBY CONNECTION FIRED!');
         try {
             const { lobbyRoomId } = connectionData;
             const lobbyMessages = await this.chatLogicService.getLobbyMessages(lobbyRoomId);
@@ -93,9 +87,6 @@ export class GameChatService implements IGameChatService {
             return allMessagesEvents;
 
         } catch (error) {
-            console.log('CHAT SERVICE - HANDLE LOBBY ERROR!');
-            console.log(error);
-
             const errText = error.message || 'SOMETHING WENT WRONG. PLEASE TRY AGAIN LATER!';
             const eventData: ChatEventNewMsgData = this.chatLogicService.errTxtToEventData(errText);
             const targetedEvent: TargetedEvent = {
@@ -109,7 +100,6 @@ export class GameChatService implements IGameChatService {
 
     async handleGameConnection(connectionData: { userId: string, gameRoomId: string })
         : Promise<ChatEventNewMessage[] | TargetedEvent> {
-        console.log('GAME CHAT SERVICE - HANDLE GAME CONNECTION FIRED!');
         try {
             const { gameRoomId } = connectionData;
             const gameMessages = await this.chatLogicService.getGameMessages(gameRoomId);
@@ -134,9 +124,6 @@ export class GameChatService implements IGameChatService {
             return allMessagesEvents;
 
         } catch (error) {
-            console.log('CHAT SERVICE - HANDLE GAME ERROR!');
-            console.log(error);
-
             const errText = error.message || 'SOMETHING WENT WRONG. PLEASE TRY AGAIN LATER!';
             const eventData: ChatEventNewMsgData = this.chatLogicService.errTxtToEventData(errText);
             const targetedEvent: TargetedEvent = {
@@ -150,7 +137,6 @@ export class GameChatService implements IGameChatService {
 
     async handleSendMsgMessage(payload: LayerMessage): Promise<ChatEventNewMessage | TargetedEvent> {
         try {
-            console.log('GAME CHAT SERVICE - HANDLE SEND MSG MESSAGE FIRED!');
             const { msgData: { message, user }, contextData: { layer, roomId } } = payload;
 
             let resEvent: ChatEventNewMessage | TargetedEvent;
@@ -196,9 +182,6 @@ export class GameChatService implements IGameChatService {
             return resEvent;
 
         } catch (error) {
-            console.log('CHAT SERVICE - HANDLE GAME ERROR!');
-            console.log(error);
-
             const errText = error.message || 'SOMETHING WENT WRONG. PLEASE TRY AGAIN LATER!';
             const eventData: ChatEventNewMsgData = this.chatLogicService.errTxtToEventData(errText);
             const targetedEvent: TargetedEvent = {
