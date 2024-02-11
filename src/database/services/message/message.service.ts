@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotAcceptableException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateDirectMessageDTO, CreateGeneralMessageDTO, RequestDmDTO, RequestHubMessageDTO, RequestRoomMessageDTO } from 'src/database/dtos/message';
 import { DirectMessage, GeneralMessage, Player } from 'src/database/entities';
@@ -15,7 +15,7 @@ interface IMessageService {
 @Injectable()
 export class MessageService implements IMessageService {
     private readonly MESSAGE_LIMIT = 500;
-    private readonly TIME_RANGE_MIN = 10;
+    private readonly TIME_RANGE_MIN = 60;
 
     constructor(
         @InjectRepository(GeneralMessage)
@@ -27,8 +27,6 @@ export class MessageService implements IMessageService {
     ) { }
 
     async getLayerMessages(requestMessageDTO: RequestHubMessageDTO | RequestRoomMessageDTO): Promise<GeneralMessage[]> {
-        console.log('MESSAGE SERVICE - GET ALL HUB MESSAGES FIRED!');
-        console.log(requestMessageDTO);
         const { layer } = requestMessageDTO;
 
         const timestampLimit = this.getOffsetTimestamp(this.TIME_RANGE_MIN);
@@ -45,19 +43,14 @@ export class MessageService implements IMessageService {
                 order: { timestamp: 'ASC' },
             });
 
-        console.log('MESSAGES:');
-        console.log(messages);
         return messages;
     }
 
     async getDMsByUser(requestDmDTO: RequestDmDTO): Promise<DirectMessage[]> {
-        console.log('MESSAGE SERVICE - GET DMs By USER FIRED!');
-        console.log(requestDmDTO);
         const { userId } = requestDmDTO;
         const user = await this.playerRepository.findOneBy({ id: userId });
 
         if (!user) throw new NotFoundException('User is not found!');
-        console.log('USER FOUND:'); console.log(user);
 
         const timestampLimit = this.getOffsetTimestamp(this.TIME_RANGE_MIN);
 
@@ -67,21 +60,17 @@ export class MessageService implements IMessageService {
                 { target: { id: user.id }, timestamp: MoreThanOrEqual(timestampLimit) },
             ],
             take: this.MESSAGE_LIMIT,
-            order: { timestamp: 'DESC' },
+            order: { timestamp: 'ASC' },
         });
-
-        console.log('USER DM-s:'); console.log(userDMs);
 
         return userDMs;
     }
 
     async createGeneralMessage(createGeneralMessageDTO: CreateGeneralMessageDTO): Promise<GeneralMessage> {
-        console.log('MESSAGE SERVICE - ADD GENERAL MESSAGE FIRED!');
         const { authorId, message, layer, roomId } = createGeneralMessageDTO;
         const author = await this.playerRepository.findOneBy({ id: authorId });
 
         if (!author) throw new NotFoundException('Author is not found!');
-        console.log('AUTHOR FOUND:'); console.log(author);
 
         const newMessage = await this.generalMsgRepository.create(
             {
@@ -91,24 +80,23 @@ export class MessageService implements IMessageService {
                 room_id: roomId
             });
 
-        console.log('New message:'); console.log(newMessage);
         return await this.generalMsgRepository.save(newMessage);
     }
 
     async createDirectMessage(createDirectMessageDTO: CreateDirectMessageDTO): Promise<DirectMessage> {
-        console.log('MESSAGE SERVICE - ADD DIRECT MESSAGE FIRED!');
         const { authorId, message, targetName } = createDirectMessageDTO;
         const author = await this.playerRepository.findOneBy({ id: authorId });
 
         if (!author) throw new NotFoundException('Author is not found!');
-        console.log('DM AUTHOR FOUND:'); console.log(author);
+
         const target = await this.playerRepository.findOneBy({ name: targetName });
 
         if (!target) throw new NotFoundException('Target is not found!');
-        console.log('DM TARGET FOUND:'); console.log()
+
+        if (target.id === author.id) throw new NotAcceptableException('Do you really need a DM to chat with yourself?');
 
         const newDm = await this.directMsgRepository.create({ author, message, target });
-        console.log('New direct message:'); console.log(newDm);
+
         return await this.directMsgRepository.save(newDm);
     }
 
