@@ -42,6 +42,8 @@ export class ChatLogicService {
 
         if (!whisperCmd || !target || !messageWords) throw Error('Can\'t parse direct message!');
 
+        if (messageWords.length === 0) throw new Error('Try to add an actual message next time!');
+
         return { target, messageTxt: messageWords.join(' ') };
     }
 
@@ -49,7 +51,7 @@ export class ChatLogicService {
         // DM syntax is "/w [target_name] [message]"
         const splitMsg = message.split(' ');
 
-        return splitMsg.length >= 3 && splitMsg[0] === '/w'
+        return splitMsg.length >= 2 && splitMsg[0] === '/w'
     }
 
     errTxtToEventData(errText: string): ChatEventNewMsgData {
