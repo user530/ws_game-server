@@ -21,7 +21,7 @@ export class PlayerService implements IPlayerControls {
     ) { }
 
     async getAllPlayers(): Promise<Player[]> {
-        return await this.playersRepository.find({ order: { id: 'ASC' } });
+        return await this.playersRepository.find({ order: { createdAt: 'ASC' } });
     }
 
     async getPlayerById(requestPlayerByIdDTO: RequestPlayerByIdDTO): Promise<Player | null> {
