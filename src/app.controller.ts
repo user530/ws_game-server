@@ -1,5 +1,4 @@
 import { Controller, Get, HttpCode } from '@nestjs/common';
-import { AppService } from './app.service';
 import { PlayerService } from './database/services';
 
 @Controller({
@@ -7,7 +6,6 @@ import { PlayerService } from './database/services';
 })
 export class AppController {
   constructor(
-    private readonly appService: AppService,
     private readonly playerService: PlayerService,
   ) { }
 
@@ -15,11 +13,11 @@ export class AppController {
   @HttpCode(200)
   async getPlayers() {
     try {
-      console.log('Get players fired!');
       const players = await this.playerService.getAllPlayers();
+
       return players;
     } catch (error) {
-      return error
+      throw error
     }
   }
 }
