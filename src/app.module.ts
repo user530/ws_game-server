@@ -26,7 +26,7 @@ import { GameModule } from './game/game.module';
     GameModule,
   ],
   controllers: [
-    AppController
+    AppController,
   ],
   providers: [
     AppService,
