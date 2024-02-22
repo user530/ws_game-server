@@ -4,12 +4,13 @@ import { ChatCommand, HubCommand, HubEvent, MessageType } from '@user530/ws_game
 import { Socket, Namespace } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { ExecutionContext, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameChatService } from 'src/game/game_chat/services/game_chat/game_chat.service';
 import { ChatLayer } from 'src/database/entities/message.entity';
 import { TargetedEvent } from 'src/game/game_chat/interfaces';
 import { ChatEventNewMessage } from '@user530/ws_game_shared/interfaces/ws-events';
 import { SendMessageDTO } from 'src/game/game_chat/dtos/send-message.dto';
+import { GameHubGuard } from '../../guards/game_hub/game_hub.guard';
 
 @WebSocketGateway({
   cors: '*',
@@ -23,12 +24,26 @@ export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandl
   constructor(
     private readonly gameHubService: GameHubService,
     private readonly gameChatService: GameChatService,
+    private readonly gameHubGuard: GameHubGuard,
   ) { }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
     // Skip connection logic on reconnect
     if (client.recovered)
       return;
+
+    // Check if there is no existing connections with client credentials (manually, because HandleConnection doesn't work with UseGuards) 
+    const canConnect = this.gameHubGuard.canActivate(
+      {
+        switchToWs: () => ({ getClient: () => client })
+      } as ExecutionContext
+    );
+
+    // If user with this ID is already connected, disconnect client
+    if (!canConnect) {
+      const leftHubEvent = await this.gameHubService.handleLeaveHubMessage();
+      return client.emit(leftHubEvent.command);
+    }
 
     // Initial connection logic
     const { userId } = client.handshake.auth;
