@@ -34,6 +34,11 @@ export class CreatePlayerTable1700141479742 implements MigrationInterface {
                 ]
             }
         ));
+
+        // Fill with some default values
+        await queryRunner.query(`
+            INSERT INTO player (name) VALUES ('player_1'), ('player_2'), ('player_3'), ('player_4'), ('player_5'), ('player_6'), ('player_7'), ('player_8'), ('player_9'), ('player_10') 
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
