@@ -4,7 +4,7 @@ import { ChatCommand, HubCommand, HubEvent, MessageType } from '@user530/ws_game
 import { Socket, Namespace } from 'socket.io';
 import { GameHubService } from '../../services/game_hub/game_hub.service';
 import { HostGameDTO, JoinGameDTO } from '../../dtos';
-import { ExecutionContext, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ExecutionContext, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameChatService } from 'src/game/game_chat/services/game_chat/game_chat.service';
 import { ChatLayer } from 'src/database/entities/message.entity';
 import { TargetedEvent } from 'src/game/game_chat/interfaces';
@@ -13,8 +13,9 @@ import { SendMessageDTO } from 'src/game/game_chat/dtos/send-message.dto';
 import { GameHubGuard } from '../../guards/game_hub/game_hub.guard';
 
 @WebSocketGateway({
+  path: process.env.ENV_WS_PATH || '/socket.io',
   cors: '*',
-  namespace: '/hub'
+  namespace: '/hub',
 })
 @UsePipes(new ValidationPipe())
 export class GameHubGateway implements OnGatewayConnection, GameHubMessagesHandler, ChatMessagesHandler {

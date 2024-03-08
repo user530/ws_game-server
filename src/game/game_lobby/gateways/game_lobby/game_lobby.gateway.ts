@@ -11,6 +11,7 @@ import { TargetedEvent } from 'src/game/game_chat/interfaces';
 import { ChatEventNewMessage } from '@user530/ws_game_shared/interfaces/ws-events';
 
 @WebSocketGateway({
+  path: process.env.ENV_WS_PATH || '/socket.io',
   cors: '*',
   namespace: '/lobby',
 })
