@@ -13,7 +13,7 @@ import { SendMessageDTO } from 'src/game/game_chat/dtos/send-message.dto';
 import { GameHubGuard } from '../../guards/game_hub/game_hub.guard';
 
 @WebSocketGateway({
-  path: process.env.ENV_WS_PATH || '/socket.io',
+  path: process.env.ENV_WS_SERVER_PATH || '/socket.io',
   cors: '*',
   namespace: '/hub',
 })
